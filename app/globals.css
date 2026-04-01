@@ -1,8 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f6f8;
+  --foreground: #111319;
+  --surface: #ffffff;
+  --surface-2: #f7f7fa;
+  --surface-3: #f1f2f5;
+  --border: #e6e8ec;
+  --text: #151922;
+  --muted: #6b7280;
+  --muted-2: #98a2b3;
+  --accent-bg: #fff1f1;
+  --canvas: #f5f6f8;
+}
+
+[data-theme="dark"] {
+  --background: #0f1113;
+  --foreground: #e7e9ed;
+  --surface: #15181c;
+  --surface-2: #121418;
+  --surface-3: #1b1f24;
+  --border: #23262b;
+  --text: #e7e9ed;
+  --muted: #9aa0a6;
+  --muted-2: #b6bdc6;
+  --accent-bg: #1f2329;
+  --canvas: #0f1113;
 }
 
 @theme inline {
@@ -12,15 +35,85 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+:root .bg-white {
+  background-color: var(--surface);
+}
+
+:root .bg-slate-50 {
+  background-color: var(--surface-2);
+}
+
+:root .bg-slate-100 {
+  background-color: var(--surface-3);
+}
+
+:root .border-slate-200 {
+  border-color: var(--border);
+}
+
+:root .border-slate-300 {
+  border-color: var(--border);
+}
+
+:root .text-slate-900 {
+  color: var(--text);
+}
+
+:root .text-slate-800 {
+  color: var(--text);
+}
+
+:root .text-slate-700 {
+  color: var(--text);
+}
+
+:root .text-slate-600 {
+  color: var(--muted);
+}
+
+:root .text-slate-500 {
+  color: var(--muted-2);
+}
+
+:root .bg-\[\#F4F6FA\] {
+  background-color: var(--canvas);
+}
+
+:root .bg-amber-50 {
+  background-color: var(--accent-bg);
+}
+
+:root .border-amber-200 {
+  border-color: color-mix(in srgb, var(--accent-bg), var(--border) 60%);
+}
+
+:root .bg-\[\#0E1A35\] {
+  background-color: #f3f4f6;
+}
+
+:root .bg-\[\#0E1A35\] + .text-white,
+:root .bg-\[\#0E1A35\].text-white {
+  color: #111827;
+}
+
+[data-theme="dark"] .bg-\[\#0E1A35\] {
+  background-color: #1f2329;
+}
+
+[data-theme="dark"] .bg-\[\#0E1A35\].text-white {
+  color: #e5e7eb;
+}
+
+:root .shadow-sm {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="dark"] .shadow-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
