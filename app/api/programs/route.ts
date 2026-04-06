@@ -79,18 +79,17 @@ export async function GET(request: Request) {
           select key from canonical_key
         )
         select
-          dm.keyword_code as keyword,
-          dr.start_period::text as start_period,
-          dr.end_period::text as end_period,
+          vrmd.keyword_code as keyword,
+          vrmd.start_period::text as start_period,
+          vrmd.end_period::text as end_period,
           case
-            when dr.end_period < current_date then 'expired'
-            when dr.start_period > current_date then 'upcoming'
+            when vrmd.end_period < current_date then 'expired'
+            when vrmd.start_period > current_date then 'upcoming'
             else 'active'
           end as status
-        from dim_rule dr
-        join dim_merchant dm on dm.merchant_key = dr.rule_merchant
-        where dr.rule_merchant in (select merchant_key from canonical_scope)
-        order by dr.end_period asc
+        from vw_rule_merchant_dim vrmd
+        where vrmd.merchant_key in (select merchant_key from canonical_scope)
+        order by vrmd.end_period asc
       `,
       [session.merchantKey]
     ),
