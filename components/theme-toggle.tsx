@@ -15,7 +15,15 @@ const getSystemTheme = (): Theme => {
 };
 
 export function ThemeToggle({ compact = false }: { compact?: boolean }) {
-  const [theme, setTheme] = React.useState<Theme>("light");
+  const [theme, setTheme] = React.useState<Theme>(() => {
+    if (typeof document !== "undefined") {
+      const current = document.documentElement.dataset.theme;
+      if (current === "dark" || current === "light") {
+        return current;
+      }
+    }
+    return "light";
+  });
 
   React.useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY) as Theme | null;
@@ -33,13 +41,15 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   return (
     <button
       type="button"
-      className={`inline-flex items-center gap-2 rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50 ${
-        compact ? "px-2 py-1" : "px-2.5 py-1.5"
+      className={`inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white text-xs font-medium text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-50 ${
+        compact ? "px-2.5 py-1.5" : "px-3 py-2"
       }`}
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label="Toggle theme"
     >
-      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-700">
+        {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+      </span>
       {compact ? null : <span>{isDark ? "Light" : "Dark"}</span>}
     </button>
   );

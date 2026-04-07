@@ -60,7 +60,7 @@ export async function GET(request: Request) {
   const latestEnd = addMonths(latestStart, 1);
   const previousMonth = formatMonth(addMonths(latestStart, -1));
 
-  const [kpiCurrent, kpiPrevious] = await Promise.all([
+  const [kpiCurrent, kpiPrevious, merchantProfile] = await Promise.all([
     query<{
       redeem: string;
       unique_redeemer: string;
@@ -106,6 +106,35 @@ export async function GET(request: Request) {
           and ($4::text[] is null or cardinality($4::text[]) = 0 or dcl.branch = any($4::text[]))
       `,
       [session.merchantKey, previousMonth, categoryFilters, branchFilters]
+    ),
+    query<{
+      merchant_names: string[] | null;
+      uniq_merchants: string[] | null;
+      categories: string[] | null;
+      keywords: string[] | null;
+      start_period: string | null;
+      end_period: string | null;
+      point_redeem: string | null;
+    }>(
+      `
+        ${canonicalScopeCte}
+        select
+          array_remove(array_agg(distinct dm.merchant_name), null) as merchant_names,
+          array_remove(array_agg(distinct dm.uniq_merchant), null) as uniq_merchants,
+          array_remove(array_agg(distinct dc.category), null) as categories,
+          array_remove(array_agg(distinct dm.keyword_code), null) as keywords,
+          min(vrmd.start_period)::text as start_period,
+          max(vrmd.end_period)::text as end_period,
+          (array_agg(distinct vrmd.point_redeem order by vrmd.point_redeem desc))[1]::int::text as point_redeem
+        from dim_merchant dm
+        join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
+        join dim_category dc on dc.category_id = dm.category_id
+        left join vw_rule_merchant_dim vrmd on vrmd.merchant_key = dm.merchant_key
+        where dm.merchant_key in (select merchant_key from canonical_scope)
+          and ($2::text[] is null or cardinality($2::text[]) = 0 or dc.category = any($2::text[]))
+          and ($3::text[] is null or cardinality($3::text[]) = 0 or dcl.branch = any($3::text[]))
+      `,
+      [session.merchantKey, categoryFilters, branchFilters]
     ),
   ]);
 
@@ -231,6 +260,15 @@ export async function GET(request: Request) {
 
   const current = kpiCurrent.rows[0] ?? { redeem: 0, unique_redeemer: 0, burning_poin: 0 };
   const previous = kpiPrevious.rows[0] ?? { redeem: 0, unique_redeemer: 0, burning_poin: 0 };
+  const merchant = merchantProfile.rows[0] ?? {
+    merchant_names: [],
+    uniq_merchants: [],
+    categories: [],
+    keywords: [],
+    start_period: null,
+    end_period: null,
+    point_redeem: null,
+  };
 
   return NextResponse.json({
     month: latestMonth,
@@ -240,6 +278,13 @@ export async function GET(request: Request) {
     merchant: {
       merchantKey: session.merchantKey,
       email: session.email,
+      merchantNames: merchant.merchant_names ?? [],
+      uniqMerchants: merchant.uniq_merchants ?? [],
+      categories: merchant.categories ?? [],
+      keywords: merchant.keywords ?? [],
+      startPeriod: merchant.start_period,
+      endPeriod: merchant.end_period,
+      pointRedeem: merchant.point_redeem === null ? null : toNumber(merchant.point_redeem),
     },
     myKpi: {
       redeem: toNumber(current.redeem),

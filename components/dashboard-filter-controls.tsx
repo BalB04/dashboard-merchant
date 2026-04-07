@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Filter, RefreshCcw, Sparkles } from "lucide-react";
 
 import { useDashboardFilters } from "@/components/dashboard-filter-provider";
 
@@ -32,34 +33,50 @@ export function DashboardFilterControls() {
   }, [applied, options.months]);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="text-xs text-slate-500">Global Filter</div>
-        <div className="text-xs text-slate-500">Latest update: {latestMonth ? getMonthLabel(latestMonth) : "-"}</div>
+    <div className="glass-panel content-fade-in rounded-[20px] border border-slate-200 p-5 shadow-sm">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-slate-900">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-red-700">
+              <Filter className="h-4 w-4" />
+            </span>
+            <span>Global Filter</span>
+          </div>
+          <div className="max-w-xl text-sm leading-6 font-medium text-slate-500">Refine period, category, dan branch untuk membaca performa merchant lebih cepat.</div>
+        </div>
+        <div className="pill-accent rounded-full px-3 py-1.5 text-xs font-semibold">
+          Latest update: {latestMonth ? getMonthLabel(latestMonth) : "-"}
+        </div>
       </div>
 
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1">{selectedSummary.month}</span>
-        <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1">{selectedSummary.category}</span>
-        <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1">{selectedSummary.branch}</span>
+      <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+        <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 font-semibold">{selectedSummary.month}</span>
+        <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 font-semibold">{selectedSummary.category}</span>
+        <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 font-semibold">{selectedSummary.branch}</span>
       </div>
 
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="rounded-md bg-[#0E1A35] px-3 py-2 text-sm text-white disabled:opacity-40"
+          className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-[#e60028] px-4 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-40"
           disabled={!initialized || loading}
           onClick={() => setIsOpen((prev) => !prev)}
         >
+          <Sparkles className="h-4 w-4" />
           {isOpen ? "Close Filter" : "Open Filter"}
         </button>
-        <button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={resetAll}>
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          onClick={resetAll}
+        >
+          <RefreshCcw className="h-4 w-4" />
           Reset
         </button>
       </div>
 
       {isOpen ? (
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
           <FilterColumn
             title="Periode"
             options={options.months}
@@ -91,7 +108,7 @@ export function DashboardFilterControls() {
           <div className="md:col-span-3">
             <button
               type="button"
-              className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              className="rounded-full bg-[#e60028] px-4 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#c70022]"
               onClick={() => {
                 applyDraft();
                 setIsOpen(false);
@@ -126,24 +143,29 @@ function FilterColumn({
   formatLabel,
 }: FilterColumnProps) {
   return (
-    <div className="rounded-lg border border-slate-200 p-2">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="text-xs font-semibold text-slate-600">{title}</div>
+    <div className="rounded-[16px] border border-slate-200 bg-slate-50/70 p-3">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-600">{title}</div>
         <div className="flex gap-1">
-          <button type="button" className="text-[11px] text-blue-700" onClick={onSelectAll}>
+          <button type="button" className="rounded-full px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-white" onClick={onSelectAll}>
             all
           </button>
-          <button type="button" className="text-[11px] text-blue-700" onClick={onUnselectAll}>
+          <button type="button" className="rounded-full px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-white" onClick={onUnselectAll}>
             none
           </button>
         </div>
       </div>
-      <div className="max-h-52 space-y-2 overflow-auto">
+      <div className="max-h-52 space-y-2 overflow-auto pr-1">
         {options.map((option) => {
           const checked = selected.includes(option.value);
           return (
-            <label key={option.value} className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={checked} onChange={() => onToggle(option.value)} />
+            <label
+              key={option.value}
+              className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${
+                checked ? "border-red-200 bg-white text-slate-900 shadow-sm ring-1 ring-red-50" : "border-transparent bg-white/65 text-slate-600 hover:border-slate-200 hover:bg-white"
+              }`}
+            >
+              <input type="checkbox" checked={checked} onChange={() => onToggle(option.value)} className="accent-red-600" />
               <span>{formatLabel ? formatLabel(option.value) : option.label}</span>
             </label>
           );

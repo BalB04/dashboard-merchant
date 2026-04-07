@@ -25,10 +25,19 @@ type SeriesPoint = {
 
 const numberFmt = new Intl.NumberFormat("id-ID");
 
+const tooltipStyle = {
+  border: "1px solid var(--chart-tooltip-border)",
+  borderRadius: 16,
+  fontSize: 12,
+  background: "var(--chart-tooltip-bg)",
+  color: "var(--text)",
+  boxShadow: "0 14px 32px rgba(2, 6, 23, 0.24)",
+};
+
 export function MiniLineChart({
   data,
-  stroke = "#fb923c",
-  fill = "rgba(251, 146, 60, 0.18)",
+  stroke = "#ff8a00",
+  fill = "rgba(255, 138, 0, 0.24)",
 }: {
   data: SeriesPoint[];
   stroke?: string;
@@ -37,7 +46,7 @@ export function MiniLineChart({
   const safeData = data.length ? data : [{ label: "-", value: 0 }];
 
   return (
-    <div className="mt-1 h-[92px] w-full">
+    <div className="mt-2 h-[92px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={safeData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
           <defs>
@@ -47,8 +56,8 @@ export function MiniLineChart({
             </linearGradient>
           </defs>
           <Tooltip
-            cursor={{ stroke: "#cbd5e1", strokeDasharray: "4 4" }}
-            contentStyle={{ border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 11 }}
+            cursor={{ stroke: "var(--chart-grid)", strokeDasharray: "4 4" }}
+            contentStyle={{ ...tooltipStyle, fontSize: 11 }}
             formatter={(value: number) => [numberFmt.format(value), "Value"]}
             labelFormatter={(label: string) => label}
           />
@@ -96,71 +105,73 @@ export function MonthlyBarChart({
   const subLabel = mode === "monthly" ? String(year) : monthLabel;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="glass-panel content-fade-in rounded-[28px] border border-slate-200 p-5 shadow-sm">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-base font-semibold text-slate-900">
-            <BarChart3 className="h-4 w-4 text-slate-500" />
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-red-700">
+              <BarChart3 className="h-4 w-4" />
+            </span>
             <span>Merchant Analytics</span>
           </div>
-          <div className="text-xs text-slate-500">{subLabel}</div>
+          <div className="mt-1 text-xs text-slate-500">{subLabel}</div>
         </div>
-        <div className="flex items-center gap-1 rounded-md bg-slate-100 p-1 text-[11px]">
+        <div className="flex items-center gap-1 rounded-full bg-slate-100 p-1 text-[11px]">
           <button
             type="button"
-            className={`rounded px-2 py-0.5 font-medium ${mode === "monthly" ? "bg-white text-slate-700" : "text-slate-500"}`}
+            className={`rounded-full px-3 py-1 font-medium transition ${mode === "monthly" ? "bg-white text-slate-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
             onClick={() => setMode("monthly")}
           >
             Monthly
           </button>
           <button
             type="button"
-            className={`rounded px-2 py-0.5 font-medium ${mode === "daily" ? "bg-white text-slate-700" : "text-slate-500"}`}
+            className={`rounded-full px-3 py-1 font-medium transition ${mode === "daily" ? "bg-white text-slate-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
             onClick={() => setMode("daily")}
           >
             Daily
           </button>
         </div>
       </div>
-      <div className="mb-3 flex items-end gap-8 border-t border-slate-100 pt-3">
+      <div className="mb-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2">
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Redeem</div>
-          <div className="text-[30px] font-bold leading-none text-slate-900">
+          <div className="mt-1 text-[30px] font-bold leading-none text-slate-900">
             {numberFmt.format(totalRedeem)}
           </div>
         </div>
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Unique Redeem</div>
-          <div className="text-[30px] font-bold leading-none text-slate-900">
+          <div className="mt-1 text-[30px] font-bold leading-none text-slate-900">
             {numberFmt.format(totalUnique)}
           </div>
         </div>
       </div>
       <div className="mb-2 flex items-center gap-4 text-[11px]">
         <div className="flex items-center gap-1.5 text-slate-600">
-          <span className="h-2.5 w-2.5 rounded-sm bg-[#f43f5e]" />
+          <span className="h-2.5 w-2.5 rounded-sm bg-[#e60028]" />
           Redeem
         </div>
         <div className="flex items-center gap-1.5 text-slate-600">
-          <span className="h-2.5 w-2.5 rounded-sm bg-[#facc15]" />
+          <span className="h-2.5 w-2.5 rounded-sm bg-[#ffb000]" />
           Unique Redeem
         </div>
       </div>
       <div className="h-[210px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: "var(--chart-axis)" }} axisLine={false} tickLine={false} />
             <YAxis hide />
             <Tooltip
-              cursor={{ fill: "rgba(148,163,184,0.12)" }}
-              contentStyle={{ border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 12 }}
+              cursor={{ fill: "var(--chart-cursor)" }}
+              contentStyle={tooltipStyle}
               formatter={(value: number, name: string) => [numberFmt.format(value), name]}
               labelFormatter={(_, payload) => payload?.[0]?.payload?.full ?? ""}
             />
             <Legend content={() => null} />
-            <Bar dataKey="redeem" stackId="a" radius={[0, 0, 0, 0]} fill="#f43f5e" name="Redeem" />
-            <Bar dataKey="uniqueRedeemer" stackId="a" radius={[3, 3, 0, 0]} fill="#facc15" name="Unique Redeem" />
+            <Bar dataKey="redeem" stackId="a" radius={[0, 0, 0, 0]} fill="#e60028" name="Redeem" />
+            <Bar dataKey="uniqueRedeemer" stackId="a" radius={[6, 6, 0, 0]} fill="#ffb000" name="Unique Redeem" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -178,16 +189,16 @@ export function KeywordPieChart({
   const safeRaw = data.length ? data : [{ label: "No Keyword", value: 1 }];
   const safe = safeRaw.slice(0, 6).map((item) => ({ ...item, value: Math.max(0, item.value) }));
 
-  const colors = ["#ef4444", "#f97316", "#eab308", "#14b8a6", "#3b82f6", "#8b5cf6"];
+  const colors = ["#8f1026", "#b0142a", "#d61c32", "#f23d4d", "#ff8a00", "#ffbe18"];
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="glass-panel content-fade-in rounded-[28px] border border-slate-200 p-5 shadow-sm">
       <div className="mb-2 text-sm font-semibold text-slate-900">{title ?? "Keyword Composition"}</div>
       <div className="h-[210px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Tooltip
-              contentStyle={{ border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 12 }}
+              contentStyle={tooltipStyle}
               formatter={(value: number) => [numberFmt.format(value), "Share"]}
             />
             <Pie
@@ -202,8 +213,8 @@ export function KeywordPieChart({
               labelLine={false}
               label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}
             >
-              {safe.map((entry, index) => (
-                <Cell key={`${entry.label}-${index}`} fill={colors[index % colors.length]} />
+              {safe.map((entry, colorIndex) => (
+                <Cell key={entry.label} fill={colors[colorIndex % colors.length]} />
               ))}
             </Pie>
             <Legend

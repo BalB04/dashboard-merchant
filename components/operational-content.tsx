@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
+import { Link2, Receipt, Search } from "lucide-react";
 
 import { DashboardFilterControls } from "@/components/dashboard-filter-controls";
 import { useDashboardFilters } from "@/components/dashboard-filter-provider";
@@ -33,6 +34,21 @@ type OperationalResponse = {
 
 const PAGE_SIZE = 12;
 const fmt = (value: number) => new Intl.NumberFormat("id-ID").format(value);
+const getStatusTone = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "active":
+    case "success":
+      return "bg-emerald-100 text-emerald-700";
+    case "upcoming":
+    case "pending":
+      return "bg-amber-100 text-amber-700";
+    case "expired":
+    case "failed":
+      return "bg-rose-100 text-rose-700";
+    default:
+      return "bg-slate-100 text-slate-600";
+  }
+};
 
 const focusTargets = new Set(["trend", "rules", "transactions"]);
 
@@ -151,61 +167,73 @@ export function OperationalContent() {
       </div>
 
       <div className="grid gap-3 xl:grid-cols-2">
-
-        <div id="rules" className={`rounded-xl border bg-white p-4 shadow-sm ${highlightedSection === "rules" ? "border-blue-500" : "border-slate-200"}`}>
-          <div className="mb-2 font-semibold">My Keywords / Rules Status</div>
+        <div id="rules" className={`glass-panel content-fade-in rounded-[20px] border p-5 shadow-sm ${highlightedSection === "rules" ? "border-blue-500" : "border-slate-200"}`}>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 font-semibold text-slate-900">
+              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-red-700">
+                <Link2 className="h-4 w-4" />
+              </span>
+              <span>My Keywords / Rules Status</span>
+            </div>
+          </div>
         <div className="space-y-2 md:hidden">
           {data.keywordRules.map((row) => (
-            <div key={`${row.keyword}-${row.endPeriod}`} className="rounded-lg border border-slate-200 p-3 text-sm">
+            <div key={`${row.keyword}-${row.endPeriod}`} className="rounded-[16px] border border-slate-200 bg-slate-50/60 p-3 text-sm">
               <div className="mb-2 flex items-center justify-between">
                 <span className="font-semibold text-slate-700">{row.keyword}</span>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] capitalize text-slate-600">
-                  {row.status}
-                </span>
+                <span className={`rounded-full px-2 py-0.5 text-[11px] capitalize ${getStatusTone(row.status)}`}>{row.status}</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
                 <div>Start</div>
                 <div className="text-right font-semibold text-slate-800">{row.startPeriod}</div>
                 <div>End</div>
                 <div className="text-right font-semibold text-slate-800">{row.endPeriod}</div>
-                <div>Days</div>
-                <div className="text-right font-semibold text-slate-800">{row.daysToEnd}</div>
+                <div>Days Left</div>
+                <div className="text-right font-semibold text-slate-800">{row.status === "expired" ? "-" : row.daysToEnd}</div>
               </div>
             </div>
           ))}
         </div>
         <div className="hidden overflow-auto md:block">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="data-table w-full min-w-[720px] text-sm">
             <thead className="bg-[#0E1A35] text-white">
               <tr>
                 <th className="px-3 py-2 text-left">Keyword</th>
-                <th className="px-3 py-2 text-left">Start</th>
-                  <th className="px-3 py-2 text-left">End</th>
-                  <th className="px-3 py-2 text-left">Status</th>
-                  <th className="px-3 py-2 text-left">Days</th>
+                <th className="px-3 py-2 text-left">Status</th>
+                <th className="px-3 py-2 text-left">Start Period</th>
+                <th className="px-3 py-2 text-left">End Period</th>
+                <th className="px-3 py-2 text-left">Days Left</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.keywordRules.map((row) => (
+                <tr key={`${row.keyword}-${row.endPeriod}`} className="border-b border-slate-100">
+                  <td className="px-3 py-2">{row.keyword}</td>
+                  <td className="px-3 py-2 capitalize">
+                    <span className={`rounded-full px-2 py-1 text-[11px] ${getStatusTone(row.status)}`}>{row.status}</span>
+                  </td>
+                  <td className="px-3 py-2">{row.startPeriod}</td>
+                  <td className="px-3 py-2">{row.endPeriod}</td>
+                  <td className="px-3 py-2">{row.status === "expired" ? "-" : row.daysToEnd}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {data.keywordRules.map((row) => (
-                  <tr key={`${row.keyword}-${row.endPeriod}`} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-3 py-2">{row.keyword}</td>
-                    <td className="px-3 py-2">{row.startPeriod}</td>
-                    <td className="px-3 py-2">{row.endPeriod}</td>
-                    <td className="px-3 py-2 capitalize">{row.status}</td>
-                    <td className="px-3 py-2">{row.daysToEnd}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
+      </div>
 
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-2 font-semibold">My Keyword Performance</div>
+        <div className="glass-panel content-fade-in rounded-[20px] border border-slate-200 p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 font-semibold text-slate-900">
+              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-red-700">
+                <Link2 className="h-4 w-4" />
+              </span>
+              <span>My Keyword Performance</span>
+            </div>
+          </div>
         <div className="space-y-2 md:hidden">
           {data.keywordSummary.map((row) => (
-            <div key={row.keyword} className="rounded-lg border border-slate-200 p-3 text-sm">
+            <div key={row.keyword} className="rounded-[16px] border border-slate-200 bg-slate-50/60 p-3 text-sm">
               <div className="mb-2 flex items-center justify-between">
                 <span className="font-semibold text-slate-700">{row.keyword}</span>
               </div>
@@ -221,44 +249,55 @@ export function OperationalContent() {
           ))}
         </div>
         <div className="hidden overflow-auto md:block">
-          <table className="w-full min-w-[700px] text-sm">
+          <table className="data-table w-full min-w-[700px] text-sm">
             <thead className="bg-[#0E1A35] text-white">
               <tr>
                 <th className="px-3 py-2 text-left">Keyword</th>
                 <th className="px-3 py-2 text-left">Redeem</th>
-                  <th className="px-3 py-2 text-left">Unique Redeemer</th>
-                  <th className="px-3 py-2 text-left">Burning Poin</th>
+                <th className="px-3 py-2 text-left">Unique Redeemer</th>
+                <th className="px-3 py-2 text-left">Burning Poin</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.keywordSummary.map((row) => (
+                <tr key={row.keyword} className="border-b border-slate-100">
+                  <td className="px-3 py-2">{row.keyword}</td>
+                  <td className="px-3 py-2">{fmt(row.totalRedeem)}</td>
+                  <td className="px-3 py-2">{fmt(row.uniqueRedeemer)}</td>
+                  <td className="px-3 py-2">{fmt(row.burningPoin)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {data.keywordSummary.map((row) => (
-                  <tr key={row.keyword} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-3 py-2">{row.keyword}</td>
-                    <td className="px-3 py-2">{fmt(row.totalRedeem)}</td>
-                    <td className="px-3 py-2">{fmt(row.uniqueRedeemer)}</td>
-                    <td className="px-3 py-2">{fmt(row.burningPoin)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-
+      </div>
       </div>
 
       
 
-      <div id="transactions" className={`rounded-xl border bg-white p-4 shadow-sm ${highlightedSection === "transactions" ? "border-blue-500" : "border-slate-200"}`}>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="font-semibold">My Transaction Detail</div>
+      <div id="transactions" className={`glass-panel content-fade-in rounded-[20px] border p-5 shadow-sm ${highlightedSection === "transactions" ? "border-blue-500" : "border-slate-200"}`}>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2 font-semibold text-slate-900">
+              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-red-700">
+                <Receipt className="h-4 w-4" />
+              </span>
+              <span>My Transaction Detail</span>
+            </div>
+            <div className="mt-1 text-xs text-slate-500">Search and paginate merchant transactions</div>
+          </div>
+        </div>
+
+        <div className="relative mb-4">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);
               setPage(1);
             }}
-            placeholder="Search"
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm md:max-w-[280px]"
+            placeholder="Search keyword / status / category / branch"
+            className="soft-input w-full rounded-full py-3 pl-11 pr-4 text-sm"
           />
         </div>
 
@@ -266,11 +305,11 @@ export function OperationalContent() {
           {pageRows.map((row) => (
             <div
               key={`${row.transactionAt}-${row.msisdn}-${row.keyword}`}
-              className="rounded-lg border border-slate-200 p-3 text-sm"
+              className="rounded-[16px] border border-slate-200 bg-slate-50/60 p-3 text-sm"
             >
               <div className="mb-2 flex items-center justify-between gap-2">
                 <span className="font-semibold text-slate-700">{row.keyword}</span>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">{row.status}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[11px] ${getStatusTone(row.status)}`}>{row.status}</span>
               </div>
               <div className="text-xs text-slate-500">{new Date(row.transactionAt).toLocaleString("id-ID")}</div>
               <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600">
@@ -289,7 +328,7 @@ export function OperationalContent() {
           ))}
         </div>
         <div className="hidden overflow-auto md:block">
-          <table className="w-full min-w-[860px] text-sm">
+          <table className="data-table w-full min-w-[860px] text-sm">
             <thead className="bg-[#0E1A35] text-white">
               <tr>
                 <th className="px-3 py-2 text-left">Time</th>
@@ -304,10 +343,12 @@ export function OperationalContent() {
             </thead>
             <tbody>
               {pageRows.map((row) => (
-                <tr key={`${row.transactionAt}-${row.msisdn}-${row.keyword}`} className="border-b border-slate-100 hover:bg-slate-50">
+                <tr key={`${row.transactionAt}-${row.msisdn}-${row.keyword}`} className="border-b border-slate-100">
                   <td className="px-3 py-2">{new Date(row.transactionAt).toLocaleString("id-ID")}</td>
                   <td className="px-3 py-2">{row.keyword}</td>
-                  <td className="px-3 py-2">{row.status}</td>
+                  <td className="px-3 py-2">
+                    <span className={`rounded-full px-2 py-1 text-[11px] ${getStatusTone(row.status)}`}>{row.status}</span>
+                  </td>
                   <td className="px-3 py-2">{fmt(row.qty)}</td>
                   <td className="px-3 py-2">{fmt(row.pointRedeem)}</td>
                   <td className="px-3 py-2">{fmt(row.redeemPointTotal)}</td>
@@ -329,7 +370,7 @@ export function OperationalContent() {
                 <button
                   key={item}
                   type="button"
-                  className={`rounded border px-2 py-1 ${item === page ? "border-[#0E1A35] bg-[#0E1A35] text-white" : "border-slate-300 hover:bg-slate-100"}`}
+                  className={`rounded-full border px-3 py-1.5 font-medium transition ${item === page ? "border-[#0E1A35] bg-[#0E1A35] text-white" : "border-slate-300 hover:bg-slate-100"}`}
                   onClick={() => setPage(item)}
                 >
                   {item}

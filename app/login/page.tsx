@@ -38,13 +38,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 px-4 py-8">
+    <div className="relative flex min-h-screen items-center justify-center bg-[color:var(--canvas)] px-4 py-8">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(230,0,40,0.08),transparent_28%)]" />
       <div className="absolute right-4 top-4">
         <ThemeToggle compact />
       </div>
       <form
         onSubmit={onSubmit}
-        className="w-full max-w-sm space-y-6 rounded-3xl border border-slate-200 bg-white/90 p-7 shadow-[0_12px_45px_rgba(15,23,42,0.12)] backdrop-blur"
+        className="glass-panel relative z-10 w-full max-w-sm space-y-6 rounded-3xl border border-slate-200 p-7 shadow-[0_12px_45px_rgba(15,23,42,0.12)]"
       >
         <div className="space-y-2">
           <div className="flex items-center gap-3">
@@ -64,7 +65,7 @@ export default function LoginPage() {
           <input
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
-            className="w-full rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-slate-900 placeholder:text-amber-400 focus:border-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-200"
+            className="soft-input w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none"
             autoComplete="username"
             placeholder="enter email or username"
             required
@@ -77,7 +78,7 @@ export default function LoginPage() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             type="password"
-            className="w-full rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-slate-900 placeholder:text-amber-400 focus:border-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-200"
+            className="soft-input w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none"
             autoComplete="current-password"
             placeholder="enter password"
             required
