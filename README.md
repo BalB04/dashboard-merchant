@@ -25,6 +25,9 @@ AUTH_SESSION_SECRET=replace-with-random-long-secret
 
 `MERCHANT_EMAIL=... MERCHANT_USERNAME=... MERCHANT_PASSWORD=... MERCHANT_KEY=... pnpm db:seed:merchant-user`
 
+Default scope adalah `merchant`, artinya user hanya terhubung ke 1 `merchant_key`.
+Kalau user harus mewakili 1 canonical merchant yang punya beberapa `merchant_key`, set `MERCHANT_SCOPE_TYPE=canonical`.
+
 For `MERCHANT_PASSWORD_HASH`, use `salt_hex:hash_hex`. If `MERCHANT_PASSWORD_HASH` is provided, `MERCHANT_PASSWORD` is optional.
 
 4. Sync canonical merchant mapping table (groups multiple `merchant_key` per `uniq_merchant`):
@@ -110,6 +113,10 @@ pnpm db:sync:usernames -- --apply
 
 Seed 1 merchant user dan mapping ke `merchant_users`.
 
+`MERCHANT_SCOPE_TYPE` tersedia:
+- `merchant`: user hanya akses `MERCHANT_KEY`
+- `canonical`: user akses semua merchant dalam canonical group dari `MERCHANT_KEY`
+
 Contoh dengan password plain text:
 
 ```bash
@@ -117,6 +124,17 @@ MERCHANT_EMAIL=merchant.demo@example.com \
 MERCHANT_USERNAME=merchant_demo \
 MERCHANT_PASSWORD=rahasia123 \
 MERCHANT_KEY=c670d687-2b27-5382-8888-57db91d31f68 \
+pnpm db:seed:merchant-user
+```
+
+Contoh akun canonical:
+
+```bash
+MERCHANT_EMAIL=merchant.group@example.com \
+MERCHANT_USERNAME=merchant_group \
+MERCHANT_PASSWORD=rahasia123 \
+MERCHANT_KEY=c670d687-2b27-5382-8888-57db91d31f68 \
+MERCHANT_SCOPE_TYPE=canonical \
 pnpm db:seed:merchant-user
 ```
 

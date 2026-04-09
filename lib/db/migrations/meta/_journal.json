@@ -8,6 +8,13 @@
       "when": 1775480489559,
       "tag": "0000_fuzzy_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775534588380,
+      "tag": "0001_merchant_users_scope_type",
+      "breakpoints": true
     }
   ]
 }

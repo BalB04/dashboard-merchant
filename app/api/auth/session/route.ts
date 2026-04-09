@@ -15,6 +15,7 @@ export async function GET() {
       email: session.email,
       role: session.role,
       merchantKey: session.merchantKey,
+      scopeType: session.scopeType,
     },
   });
 }

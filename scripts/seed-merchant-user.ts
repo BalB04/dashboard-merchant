@@ -8,6 +8,7 @@ import { requireEnv } from "./_helpers";
 const email = requireEnv("MERCHANT_EMAIL").toLowerCase();
 const username = requireEnv("MERCHANT_USERNAME");
 const merchantKey = requireEnv("MERCHANT_KEY");
+const merchantScopeType = (process.env.MERCHANT_SCOPE_TYPE?.trim().toLowerCase() || "merchant") as "merchant" | "canonical";
 const passwordHash = process.env.MERCHANT_PASSWORD_HASH?.trim()
   || (process.env.MERCHANT_PASSWORD ? hashPassword(process.env.MERCHANT_PASSWORD) : "");
 
@@ -15,8 +16,25 @@ if (!passwordHash) {
   throw new Error("MERCHANT_PASSWORD or MERCHANT_PASSWORD_HASH is required");
 }
 
+if (merchantScopeType !== "merchant" && merchantScopeType !== "canonical") {
+  throw new Error("MERCHANT_SCOPE_TYPE must be 'merchant' or 'canonical'");
+}
+
 const run = async () => {
+  let resolvedMerchantKey = merchantKey;
+
   await db.transaction(async (tx) => {
+    if (merchantScopeType === "canonical") {
+      resolvedMerchantKey = (
+        await tx.execute<{ canonical_merchant_key: string }>(sql`
+          select canonical_merchant_key
+          from merchant_canonical_map
+          where merchant_key = ${merchantKey}::uuid
+          limit 1
+        `)
+      ).rows[0]?.canonical_merchant_key || merchantKey;
+    }
+
     await tx
       .insert(users)
       .values({
@@ -48,20 +66,22 @@ const run = async () => {
       .insert(merchantUsers)
       .values({
         userId,
-        merchantKey,
+        merchantKey: resolvedMerchantKey,
+        scopeType: merchantScopeType,
         isActive: true,
       })
       .onConflictDoUpdate({
         target: merchantUsers.userId,
         set: {
-          merchantKey,
+          merchantKey: resolvedMerchantKey,
+          scopeType: merchantScopeType,
           isActive: true,
           updatedAt: sql`now()`,
         },
       });
   });
 
-  console.log(`Seeded merchant user ${email} -> ${merchantKey}`);
+  console.log(`Seeded merchant user ${email} -> ${resolvedMerchantKey} (${merchantScopeType})`);
 };
 
 run().catch((error) => {

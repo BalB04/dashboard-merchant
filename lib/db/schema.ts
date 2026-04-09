@@ -24,6 +24,7 @@ const daterange = customType<{ data: string; driverData: string }>({
 });
 
 export const transactionStatus = pgEnum("transaction_status", ["success", "failed"]);
+export const merchantScopeType = pgEnum("merchant_scope_type", ["merchant", "canonical"]);
 
 export const dimCategory = pgTable("dim_category", {
   categoryId: integer("category_id").primaryKey().notNull(),
@@ -148,6 +149,7 @@ export const merchantUsers = pgTable(
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     merchantKey: uuid("merchant_key").notNull(),
+    scopeType: merchantScopeType("scope_type").default("merchant").notNull(),
     isActive: boolean("is_active").default(true).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" }).defaultNow().notNull(),

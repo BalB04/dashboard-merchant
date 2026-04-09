@@ -18,11 +18,7 @@ type OverviewResponse = {
     email: string;
     merchantNames: string[];
     uniqMerchants: string[];
-    categories: string[];
     keywords: string[];
-    startPeriod: string | null;
-    endPeriod: string | null;
-    pointRedeem: number | null;
   };
   myKpi: {
     redeem: number;
@@ -48,10 +44,8 @@ type OverviewResponse = {
     keyword: string;
     status: string;
     qty: number;
-    pointRedeem: number;
     redeemPointTotal: number;
     msisdn: string;
-    category: string;
     branch: string;
   }[];
 };
@@ -75,14 +69,6 @@ const getPageItems = (page: number, totalPages: number) => {
 };
 
 const fmt = (value: number) => new Intl.NumberFormat("id-ID").format(value);
-const formatDate = (value: string | null) =>
-  value
-    ? new Date(value).toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : "-";
 const pct = (current: number, previous: number) => {
   if (!previous) return current > 0 ? 100 : 0;
   return ((current - previous) / previous) * 100;
@@ -92,7 +78,6 @@ const formatList = (items: string[], fallback: string) => {
   if (items.length <= 2) return items.join(", ");
   return `${items.slice(0, 2).join(", ")} +${items.length - 2} lainnya`;
 };
-const formatPointRedeem = (value: number | null) => (value === null ? "-" : fmt(value));
 const getStatusTone = (status: string) => {
   switch (status.toLowerCase()) {
     case "active":
@@ -160,9 +145,7 @@ export function OverviewContent() {
     const rows = data?.transactions ?? [];
     const term = search.trim().toLowerCase();
     if (!term) return rows;
-    return rows.filter((row) =>
-      `${row.keyword} ${row.status} ${row.category} ${row.branch}`.toLowerCase().includes(term),
-    );
+    return rows.filter((row) => `${row.keyword} ${row.status} ${row.branch}`.toLowerCase().includes(term));
   }, [data?.transactions, search]);
 
   const totalPages = React.useMemo(
@@ -229,9 +212,6 @@ export function OverviewContent() {
       ? data.merchant.uniqMerchants[0]
       : "";
   const keywordText = formatList(data.merchant.keywords, "");
-  const categoryText = formatList(data.merchant.categories, "");
-  const periodText = `${formatDate(data.merchant.startPeriod)} - ${formatDate(data.merchant.endPeriod)}`;
-  const pointRedeemText = `point redeem : ${formatPointRedeem(data.merchant.pointRedeem)}`;
   const merchantSecondaryMeta = [merchantAlt, formatList(data.merchant.merchantNames.slice(1), "")]
     .filter(Boolean)
     .join(" / ");
@@ -253,26 +233,6 @@ export function OverviewContent() {
             {keywordText ? (
               <span className="inline-flex max-w-full items-center font-mono text-[12.5px] tracking-[0.04em] text-slate-500 sm:text-[14px]">
                 {keywordText}
-              </span>
-            ) : null}
-            {keywordText && (categoryText || periodText || pointRedeemText) ? (
-              <span className="text-slate-300">•</span>
-            ) : null}
-            {categoryText ? (
-              <span className="inline-flex items-center font-medium text-slate-600">
-                {categoryText}
-              </span>
-            ) : null}
-            {categoryText && (periodText || pointRedeemText) ? (
-              <span className="text-slate-300">•</span>
-            ) : null}
-            {periodText ? (
-              <span className="inline-flex items-center text-slate-600">{periodText}</span>
-            ) : null}
-            {periodText && pointRedeemText ? <span className="text-slate-300">•</span> : null}
-            {pointRedeemText ? (
-              <span className="inline-flex items-center font-medium text-slate-700">
-                {pointRedeemText}
               </span>
             ) : null}
           </div>
@@ -552,7 +512,7 @@ export function OverviewContent() {
               setSearch(event.target.value);
               setPage(1);
             }}
-            placeholder="Search keyword / status / category / branch"
+            placeholder="Search keyword / status / branch"
             className="soft-input w-full rounded-full py-3 pl-11 pr-4 text-sm"
           />
         </div>
@@ -577,16 +537,10 @@ export function OverviewContent() {
               <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600">
                 <div>Qty</div>
                 <div className="text-right font-semibold text-slate-800">{fmt(row.qty)}</div>
-                <div>Point</div>
-                <div className="text-right font-semibold text-slate-800">
-                  {fmt(row.pointRedeem)}
-                </div>
                 <div>Total</div>
                 <div className="text-right font-semibold text-slate-800">
                   {fmt(row.redeemPointTotal)}
                 </div>
-                <div>Category</div>
-                <div className="text-right font-semibold text-slate-800">{row.category}</div>
                 <div>Branch</div>
                 <div className="text-right font-semibold text-slate-800">{row.branch}</div>
               </div>
@@ -601,9 +555,7 @@ export function OverviewContent() {
                 <th className="px-3 py-2 text-left">Keyword</th>
                 <th className="px-3 py-2 text-left">Status</th>
                 <th className="px-3 py-2 text-left">Qty</th>
-                <th className="px-3 py-2 text-left">Point</th>
                 <th className="px-3 py-2 text-left">Total</th>
-                <th className="px-3 py-2 text-left">Category</th>
                 <th className="px-3 py-2 text-left">Branch</th>
               </tr>
             </thead>
@@ -625,9 +577,7 @@ export function OverviewContent() {
                     </span>
                   </td>
                   <td className="px-3 py-2">{fmt(row.qty)}</td>
-                  <td className="px-3 py-2">{fmt(row.pointRedeem)}</td>
                   <td className="px-3 py-2">{fmt(row.redeemPointTotal)}</td>
-                  <td className="px-3 py-2">{row.category}</td>
                   <td className="px-3 py-2">{row.branch}</td>
                 </tr>
               ))}

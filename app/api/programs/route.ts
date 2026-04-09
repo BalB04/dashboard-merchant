@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getCurrentMerchantSession } from "@/lib/auth/current-user";
 import { parseFilterParams, parseMonthParams } from "@/lib/dashboard-filters";
 import { query } from "@/lib/db";
+import { merchantScopeCte } from "@/lib/merchant-scope";
 
 const monthLabel = (value: string) => {
   const [year, month] = value.split("-").map(Number);
@@ -46,6 +47,8 @@ const loadProviderBanners = async () => {
   }));
 };
 
+const scopedMerchantCte = merchantScopeCte(1, 2);
+
 export async function GET(request: Request) {
   const session = await getCurrentMerchantSession();
   if (!session) {
@@ -59,27 +62,21 @@ export async function GET(request: Request) {
 
   const latestMonth = selectedMonths[selectedMonths.length - 1];
 
-  const [rules, keywordRedeem, performance, banners] = await Promise.all([
+  const [rules, keywordMetrics, banners] = await Promise.all([
     query<{
       keyword: string;
+      merchant_name: string | null;
+      uniq_merchant: string | null;
       start_period: string;
       end_period: string;
       status: "active" | "upcoming" | "expired";
     }>(
       `
-        with canonical_key as (
-          select coalesce(
-            (select canonical_merchant_key from merchant_canonical_map where merchant_key = $1::uuid),
-            $1::uuid
-          ) as key
-        ),
-        canonical_scope as (
-          select merchant_key from merchant_canonical_map where canonical_merchant_key = (select key from canonical_key)
-          union
-          select key from canonical_key
-        )
+        ${scopedMerchantCte}
         select
           vrmd.keyword_code as keyword,
+          dm.merchant_name as merchant_name,
+          dm.uniq_merchant as uniq_merchant,
           vrmd.start_period::text as start_period,
           vrmd.end_period::text as end_period,
           case
@@ -88,81 +85,65 @@ export async function GET(request: Request) {
             else 'active'
           end as status
         from vw_rule_merchant_dim vrmd
-        where vrmd.merchant_key in (select merchant_key from canonical_scope)
+        join dim_merchant dm on dm.merchant_key = vrmd.merchant_key
+        where vrmd.merchant_key in (select merchant_key from merchant_scope)
         order by vrmd.end_period asc
       `,
-      [session.merchantKey]
+      [session.merchantKey, session.scopeType]
     ),
     query<{
       keyword: string;
       total_redeem: string;
+      unique_redeemer: string;
+      burning_poin: string;
+      failed: string;
     }>(
       `
-        with canonical_key as (
-          select coalesce(
-            (select canonical_merchant_key from merchant_canonical_map where merchant_key = $1::uuid),
-            $1::uuid
-          ) as key
-        ),
-        canonical_scope as (
-          select merchant_key from merchant_canonical_map where canonical_merchant_key = (select key from canonical_key)
-          union
-          select key from canonical_key
-        )
+        ${scopedMerchantCte}
         select
           dm.keyword_code as keyword,
-          count(*) filter (where ft.status = 'success')::int as total_redeem
+          count(*) filter (where ft.status = 'success')::int as total_redeem,
+          count(distinct ft.msisdn) filter (where ft.status = 'success')::int as unique_redeemer,
+          coalesce(sum(ft.qty * ft.point_redeem) filter (where ft.status = 'success'), 0)::bigint as burning_poin,
+          count(*) filter (where ft.status = 'failed')::int as failed
         from fact_transaction ft
         join dim_merchant dm on dm.merchant_key = ft.merchant_key
         join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
         join dim_category dc on dc.category_id = dm.category_id
-        where ft.merchant_key in (select merchant_key from canonical_scope)
-          and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($2::text[])
-          and ($3::text[] is null or cardinality($3::text[]) = 0 or dc.category = any($3::text[]))
-          and ($4::text[] is null or cardinality($4::text[]) = 0 or dcl.branch = any($4::text[]))
+        where ft.merchant_key in (select merchant_key from merchant_scope)
+          and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($3::text[])
+          and ($4::text[] is null or cardinality($4::text[]) = 0 or dc.category = any($4::text[]))
+          and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
         group by dm.keyword_code
+        order by total_redeem desc, dm.keyword_code asc
       `,
-      [session.merchantKey, selectedMonths, categoryFilters, branchFilters]
-    ),
-    query<{
-      impression: string;
-      clicks: string;
-      redeem_from_promo: string;
-    }>(
-      `
-        with canonical_key as (
-          select coalesce(
-            (select canonical_merchant_key from merchant_canonical_map where merchant_key = $1::uuid),
-            $1::uuid
-          ) as key
-        ),
-        canonical_scope as (
-          select merchant_key from merchant_canonical_map where canonical_merchant_key = (select key from canonical_key)
-          union
-          select key from canonical_key
-        )
-        select
-          count(*)::int as impression,
-          count(distinct ft.msisdn) filter (where ft.status = 'success')::int as clicks,
-          count(*) filter (where ft.status = 'success')::int as redeem_from_promo
-        from fact_transaction ft
-        join dim_merchant dm on dm.merchant_key = ft.merchant_key
-        join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
-        join dim_category dc on dc.category_id = dm.category_id
-        where ft.merchant_key in (select merchant_key from canonical_scope)
-          and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($2::text[])
-          and ($3::text[] is null or cardinality($3::text[]) = 0 or dc.category = any($3::text[]))
-          and ($4::text[] is null or cardinality($4::text[]) = 0 or dcl.branch = any($4::text[]))
-      `,
-      [session.merchantKey, selectedMonths, categoryFilters, branchFilters]
+      [session.merchantKey, session.scopeType, selectedMonths, categoryFilters, branchFilters]
     ),
     loadProviderBanners(),
   ]);
 
-  const redeemByKeyword = new Map(keywordRedeem.rows.map((row) => [row.keyword, toNumber(row.total_redeem)]));
-  const perf = performance.rows[0] ?? { impression: 0, clicks: 0, redeem_from_promo: 0 };
-  const impression = toNumber(perf.impression);
-  const clicks = toNumber(perf.clicks);
+  const metricsByKeyword = new Map(
+    keywordMetrics.rows.map((row) => [
+      row.keyword,
+      {
+        redeem: toNumber(row.total_redeem),
+        uniqueRedeemer: toNumber(row.unique_redeemer),
+        burningPoin: toNumber(row.burning_poin),
+        failed: toNumber(row.failed),
+      },
+    ])
+  );
+
+  const totals = keywordMetrics.rows.reduce(
+    (acc, row) => {
+      acc.redeem += toNumber(row.total_redeem);
+      acc.uniqueRedeemer += toNumber(row.unique_redeemer);
+      acc.burningPoin += toNumber(row.burning_poin);
+      acc.failed += toNumber(row.failed);
+      return acc;
+    },
+    { redeem: 0, uniqueRedeemer: 0, burningPoin: 0, failed: 0 }
+  );
 
   return NextResponse.json({
     month: latestMonth,
@@ -174,17 +155,22 @@ export async function GET(request: Request) {
     banners,
     programs: rules.rows.map((row) => ({
       keyword: row.keyword,
+      merchantName: row.merchant_name ?? row.keyword,
+      uniqMerchant: row.uniq_merchant ?? row.keyword,
       programName: row.keyword,
       startPeriod: row.start_period,
       endPeriod: row.end_period,
       status: row.status,
-      redeem: redeemByKeyword.get(row.keyword) ?? 0,
+      redeem: metricsByKeyword.get(row.keyword)?.redeem ?? 0,
+      uniqueRedeemer: metricsByKeyword.get(row.keyword)?.uniqueRedeemer ?? 0,
+      burningPoin: metricsByKeyword.get(row.keyword)?.burningPoin ?? 0,
+      failed: metricsByKeyword.get(row.keyword)?.failed ?? 0,
     })),
     promotionPerformance: {
-      impression,
-      clicks,
-      ctr: impression > 0 ? (clicks / impression) * 100 : 0,
-      redeemFromPromo: toNumber(perf.redeem_from_promo),
+      redeem: totals.redeem,
+      uniqueRedeemer: totals.uniqueRedeemer,
+      burningPoin: totals.burningPoin,
+      failed: totals.failed,
     },
   });
 }

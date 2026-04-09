@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getCurrentMerchantSession } from "@/lib/auth/current-user";
 import { query } from "@/lib/db";
 import { parseFilterParams, parseMonthParams } from "@/lib/dashboard-filters";
+import { merchantScopeCte } from "@/lib/merchant-scope";
 
 const parseMonth = (value: string) => {
   const [year, month] = value.split("-").map(Number);
@@ -30,19 +31,7 @@ const addMonths = (date: Date, offset: number) => {
 
 const toNumber = (value: unknown) => Number(value ?? 0);
 
-const canonicalScopeCte = `
-  with canonical_key as (
-    select coalesce(
-      (select canonical_merchant_key from merchant_canonical_map where merchant_key = $1::uuid),
-      $1::uuid
-    ) as key
-  ),
-  canonical_scope as (
-    select merchant_key from merchant_canonical_map where canonical_merchant_key = (select key from canonical_key)
-    union
-    select key from canonical_key
-  )
-`;
+const scopedMerchantCte = merchantScopeCte(1, 2);
 
 export async function GET(request: Request) {
   const session = await getCurrentMerchantSession();
@@ -67,7 +56,7 @@ export async function GET(request: Request) {
       burning_poin: string;
     }>(
       `
-        ${canonicalScopeCte}
+        ${scopedMerchantCte}
         select
           count(*)::int as redeem,
           count(distinct ft.msisdn)::int as unique_redeemer,
@@ -77,12 +66,12 @@ export async function GET(request: Request) {
         join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
         join dim_category dc on dc.category_id = dm.category_id
         where ft.status = 'success'
-          and ft.merchant_key in (select merchant_key from canonical_scope)
-          and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($2::text[])
-          and ($3::text[] is null or cardinality($3::text[]) = 0 or dc.category = any($3::text[]))
-          and ($4::text[] is null or cardinality($4::text[]) = 0 or dcl.branch = any($4::text[]))
+          and ft.merchant_key in (select merchant_key from merchant_scope)
+          and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($3::text[])
+          and ($4::text[] is null or cardinality($4::text[]) = 0 or dc.category = any($4::text[]))
+          and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
       `,
-      [session.merchantKey, selectedMonths, categoryFilters, branchFilters]
+      [session.merchantKey, session.scopeType, selectedMonths, categoryFilters, branchFilters]
     ),
     query<{
       redeem: string;
@@ -90,7 +79,7 @@ export async function GET(request: Request) {
       burning_poin: string;
     }>(
       `
-        ${canonicalScopeCte}
+        ${scopedMerchantCte}
         select
           count(*)::int as redeem,
           count(distinct ft.msisdn)::int as unique_redeemer,
@@ -100,12 +89,12 @@ export async function GET(request: Request) {
         join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
         join dim_category dc on dc.category_id = dm.category_id
         where ft.status = 'success'
-          and ft.merchant_key in (select merchant_key from canonical_scope)
-          and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = $2
-          and ($3::text[] is null or cardinality($3::text[]) = 0 or dc.category = any($3::text[]))
-          and ($4::text[] is null or cardinality($4::text[]) = 0 or dcl.branch = any($4::text[]))
+          and ft.merchant_key in (select merchant_key from merchant_scope)
+          and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = $3
+          and ($4::text[] is null or cardinality($4::text[]) = 0 or dc.category = any($4::text[]))
+          and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
       `,
-      [session.merchantKey, previousMonth, categoryFilters, branchFilters]
+      [session.merchantKey, session.scopeType, previousMonth, categoryFilters, branchFilters]
     ),
     query<{
       merchant_names: string[] | null;
@@ -117,7 +106,7 @@ export async function GET(request: Request) {
       point_redeem: string | null;
     }>(
       `
-        ${canonicalScopeCte}
+        ${scopedMerchantCte}
         select
           array_remove(array_agg(distinct dm.merchant_name), null) as merchant_names,
           array_remove(array_agg(distinct dm.uniq_merchant), null) as uniq_merchants,
@@ -130,11 +119,11 @@ export async function GET(request: Request) {
         join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
         join dim_category dc on dc.category_id = dm.category_id
         left join vw_rule_merchant_dim vrmd on vrmd.merchant_key = dm.merchant_key
-        where dm.merchant_key in (select merchant_key from canonical_scope)
-          and ($2::text[] is null or cardinality($2::text[]) = 0 or dc.category = any($2::text[]))
-          and ($3::text[] is null or cardinality($3::text[]) = 0 or dcl.branch = any($3::text[]))
+        where dm.merchant_key in (select merchant_key from merchant_scope)
+          and ($3::text[] is null or cardinality($3::text[]) = 0 or dc.category = any($3::text[]))
+          and ($4::text[] is null or cardinality($4::text[]) = 0 or dcl.branch = any($4::text[]))
       `,
-      [session.merchantKey, categoryFilters, branchFilters]
+      [session.merchantKey, session.scopeType, categoryFilters, branchFilters]
     ),
   ]);
 
@@ -146,7 +135,7 @@ export async function GET(request: Request) {
       burning_poin: string;
     }>(
       `
-        ${canonicalScopeCte}
+        ${scopedMerchantCte}
         select
           date(ft.transaction_at)::text as date,
           count(*)::int as redeem,
@@ -157,14 +146,14 @@ export async function GET(request: Request) {
         join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
         join dim_category dc on dc.category_id = dm.category_id
         where ft.status = 'success'
-          and ft.merchant_key in (select merchant_key from canonical_scope)
-          and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($2::text[])
-          and ($3::text[] is null or cardinality($3::text[]) = 0 or dc.category = any($3::text[]))
-          and ($4::text[] is null or cardinality($4::text[]) = 0 or dcl.branch = any($4::text[]))
+          and ft.merchant_key in (select merchant_key from merchant_scope)
+          and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($3::text[])
+          and ($4::text[] is null or cardinality($4::text[]) = 0 or dc.category = any($4::text[]))
+          and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
         group by date(ft.transaction_at)
         order by date(ft.transaction_at)
       `,
-      [session.merchantKey, selectedMonths, categoryFilters, branchFilters]
+      [session.merchantKey, session.scopeType, selectedMonths, categoryFilters, branchFilters]
     ),
     query<{
       month: string;
@@ -173,7 +162,7 @@ export async function GET(request: Request) {
       burning_poin: string;
     }>(
       `
-        ${canonicalScopeCte}
+        ${scopedMerchantCte}
         select
           to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') as month,
           count(*)::int as redeem,
@@ -184,15 +173,15 @@ export async function GET(request: Request) {
         join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
         join dim_category dc on dc.category_id = dm.category_id
         where ft.status = 'success'
-          and ft.merchant_key in (select merchant_key from canonical_scope)
-          and ft.transaction_at >= $2
-          and ft.transaction_at < $3
-          and ($4::text[] is null or cardinality($4::text[]) = 0 or dc.category = any($4::text[]))
-          and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
+          and ft.merchant_key in (select merchant_key from merchant_scope)
+          and ft.transaction_at >= $3
+          and ft.transaction_at < $4
+          and ($5::text[] is null or cardinality($5::text[]) = 0 or dc.category = any($5::text[]))
+          and ($6::text[] is null or cardinality($6::text[]) = 0 or dcl.branch = any($6::text[]))
         group by date_trunc('month', ft.transaction_at)
         order by date_trunc('month', ft.transaction_at)
       `,
-      [session.merchantKey, addMonths(latestStart, -11), latestEnd, categoryFilters, branchFilters]
+      [session.merchantKey, session.scopeType, addMonths(latestStart, -11), latestEnd, categoryFilters, branchFilters]
     ),
     query<{
       keyword: string;
@@ -202,7 +191,7 @@ export async function GET(request: Request) {
       days_to_end: string;
     }>(
       `
-        ${canonicalScopeCte}
+        ${scopedMerchantCte}
         select
           vrmd.keyword_code as keyword,
           vrmd.start_period::text as start_period,
@@ -214,11 +203,11 @@ export async function GET(request: Request) {
           end as status,
           (vrmd.end_period - current_date)::int as days_to_end
         from vw_rule_merchant_dim vrmd
-        where vrmd.merchant_key in (select merchant_key from canonical_scope)
+        where vrmd.merchant_key in (select merchant_key from merchant_scope)
         order by vrmd.end_period asc
         limit 50
       `,
-      [session.merchantKey]
+      [session.merchantKey, session.scopeType]
     ),
     query<{
       transaction_at: string;
@@ -232,7 +221,7 @@ export async function GET(request: Request) {
       branch: string;
     }>(
       `
-        ${canonicalScopeCte}
+        ${scopedMerchantCte}
         select
           ft.transaction_at::text as transaction_at,
           dm.keyword_code as keyword,
@@ -247,14 +236,14 @@ export async function GET(request: Request) {
         join dim_merchant dm on dm.merchant_key = ft.merchant_key
         join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
         join dim_category dc on dc.category_id = dm.category_id
-        where ft.merchant_key in (select merchant_key from canonical_scope)
-          and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($2::text[])
-          and ($3::text[] is null or cardinality($3::text[]) = 0 or dc.category = any($3::text[]))
-          and ($4::text[] is null or cardinality($4::text[]) = 0 or dcl.branch = any($4::text[]))
+        where ft.merchant_key in (select merchant_key from merchant_scope)
+          and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($3::text[])
+          and ($4::text[] is null or cardinality($4::text[]) = 0 or dc.category = any($4::text[]))
+          and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
         order by ft.transaction_at desc
         limit 1000
       `,
-      [session.merchantKey, selectedMonths, categoryFilters, branchFilters]
+      [session.merchantKey, session.scopeType, selectedMonths, categoryFilters, branchFilters]
     ),
   ]);
 

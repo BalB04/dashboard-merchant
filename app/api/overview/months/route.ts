@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getCurrentMerchantSession } from "@/lib/auth/current-user";
 import { query } from "@/lib/db";
+import { merchantScopeCte } from "@/lib/merchant-scope";
 
 const monthLabel = (value: string) => {
   const [year, month] = value.split("-").map(Number);
@@ -22,19 +23,7 @@ const monthToDateUtc = (value: string) => {
   return new Date(Date.UTC(year, month - 1, 1));
 };
 
-const canonicalScopeCte = `
-  with canonical_key as (
-    select coalesce(
-      (select canonical_merchant_key from merchant_canonical_map where merchant_key = $1::uuid),
-      $1::uuid
-    ) as key
-  ),
-  canonical_scope as (
-    select merchant_key from merchant_canonical_map where canonical_merchant_key = (select key from canonical_key)
-    union
-    select key from canonical_key
-  )
-`;
+const scopedMerchantCte = merchantScopeCte(1, 2);
 
 export async function GET() {
   const session = await getCurrentMerchantSession();
@@ -44,15 +33,15 @@ export async function GET() {
 
   const rows = await query<{ month: string }>(
     `
-      ${canonicalScopeCte}
+      ${scopedMerchantCte}
       select to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') as month
       from fact_transaction ft
       where ft.status = 'success'
-        and ft.merchant_key in (select merchant_key from canonical_scope)
+        and ft.merchant_key in (select merchant_key from merchant_scope)
       group by date_trunc('month', ft.transaction_at)
       order by date_trunc('month', ft.transaction_at) desc
     `,
-    [session.merchantKey]
+    [session.merchantKey, session.scopeType]
   );
 
   const now = new Date();

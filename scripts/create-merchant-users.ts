@@ -120,12 +120,14 @@ const run = async () => {
       .values({
         userId,
         merchantKey: target.canonical_merchant_key,
+        scopeType: "canonical",
         isActive: true,
       })
       .onConflictDoUpdate({
         target: merchantUsers.userId,
         set: {
           merchantKey: target.canonical_merchant_key,
+          scopeType: "canonical",
           isActive: true,
           updatedAt: sql`now()`,
         },
