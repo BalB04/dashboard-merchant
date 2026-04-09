@@ -2,6 +2,7 @@ export type DashboardFilterSelection = {
   months: string[];
   categories: string[];
   branches: string[];
+  keywords: string[];
 };
 
 const MONTH_REGEX = /^\d{4}-\d{2}$/;
@@ -38,5 +39,6 @@ export const buildFilterSearchParams = (filters: DashboardFilterSelection) => {
   filters.months.forEach((month) => params.append("month", month));
   filters.categories.forEach((category) => params.append("category", category));
   filters.branches.forEach((branch) => params.append("branch", branch));
+  filters.keywords.forEach((keyword) => params.append("keyword", keyword));
   return params;
 };

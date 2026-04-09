@@ -12,6 +12,7 @@ type FilterSelection = {
   months: string[];
   categories: string[];
   branches: string[];
+  keywords: string[];
 };
 
 type MerchantIdentity = {
@@ -27,6 +28,7 @@ type DashboardFilterContextValue = {
     months: FilterOption[];
     categories: FilterOption[];
     branches: FilterOption[];
+    keywords: FilterOption[];
   };
   applied: FilterSelection;
   draft: FilterSelection;
@@ -71,6 +73,7 @@ const sanitizeSelection = (
     months: selectedMonths.length ? selectedMonths : allMonths,
     categories: normalizeList(value?.categories ?? []),
     branches: normalizeList(value?.branches ?? []),
+    keywords: normalizeList(value?.keywords ?? []),
   };
 };
 
@@ -87,9 +90,20 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
     months: [] as FilterOption[],
     categories: [] as FilterOption[],
     branches: [] as FilterOption[],
+    keywords: [] as FilterOption[],
   });
-  const [applied, setApplied] = React.useState<FilterSelection>({ months: [], categories: [], branches: [] });
-  const [draft, setDraftState] = React.useState<FilterSelection>({ months: [], categories: [], branches: [] });
+  const [applied, setApplied] = React.useState<FilterSelection>({
+    months: [],
+    categories: [],
+    branches: [],
+    keywords: [],
+  });
+  const [draft, setDraftState] = React.useState<FilterSelection>({
+    months: [],
+    categories: [],
+    branches: [],
+    keywords: [],
+  });
   const appliedMonthsKey = React.useMemo(() => applied.months.join(","), [applied.months]);
 
   React.useEffect(() => {
@@ -125,9 +139,14 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
           months: parseMultiParam(initialSearch, "month"),
           categories: parseMultiParam(initialSearch, "category"),
           branches: parseMultiParam(initialSearch, "branch"),
+          keywords: parseMultiParam(initialSearch, "keyword"),
         };
 
-        const hasUrlValues = fromUrl.months?.length || fromUrl.categories?.length || fromUrl.branches?.length;
+        const hasUrlValues =
+          fromUrl.months?.length ||
+          fromUrl.categories?.length ||
+          fromUrl.branches?.length ||
+          fromUrl.keywords?.length;
         const fromStorage = safeJsonParse(window.localStorage.getItem(STORAGE_KEY));
         const initialSelection = sanitizeSelection(hasUrlValues ? fromUrl : fromStorage, months);
 
@@ -156,6 +175,8 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
       try {
         const params = new URLSearchParams();
         applied.months.forEach((month) => params.append("month", month));
+        applied.categories.forEach((category) => params.append("category", category));
+        applied.branches.forEach((branch) => params.append("branch", branch));
         const response = await fetch(`/api/filters/options?${params.toString()}`);
         if (!response.ok) {
           throw new Error("Failed to load filter options");
@@ -164,6 +185,7 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
         const payload = (await response.json()) as {
           categories: FilterOption[];
           branches: FilterOption[];
+          keywords: FilterOption[];
         };
 
         if (!active) return;
@@ -171,6 +193,7 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
           ...prev,
           categories: payload.categories ?? [],
           branches: payload.branches ?? [],
+          keywords: payload.keywords ?? [],
         }));
       } catch (error) {
         console.error(error);
@@ -200,6 +223,7 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
     }
     applied.categories.forEach((category) => params.append("category", category));
     applied.branches.forEach((branch) => params.append("branch", branch));
+    applied.keywords.forEach((keyword) => params.append("keyword", keyword));
 
     const query = params.toString();
     const url = query ? `${pathname}?${query}` : pathname;
@@ -211,6 +235,7 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
       months: next.months ? normalizeList(next.months) : prev.months,
       categories: next.categories ? normalizeList(next.categories) : prev.categories,
       branches: next.branches ? normalizeList(next.branches) : prev.branches,
+      keywords: next.keywords ? normalizeList(next.keywords) : prev.keywords,
     }));
   }, []);
 
@@ -222,7 +247,7 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
 
   const resetAll = React.useCallback(() => {
     const resetValue = sanitizeSelection(
-      { months: options.months.map((option) => option.value), categories: [], branches: [] },
+      { months: options.months.map((option) => option.value), categories: [], branches: [], keywords: [] },
       options.months
     );
     setApplied(resetValue);

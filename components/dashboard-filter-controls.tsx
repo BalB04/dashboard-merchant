@@ -18,6 +18,7 @@ export function DashboardFilterControls() {
     useDashboardFilters();
 
   const [isOpen, setIsOpen] = React.useState(false);
+  const hasKeywordFilter = options.keywords.length > 1;
 
   const selectedSummary = React.useMemo(() => {
     const allMonths = options.months.map((option) => option.value);
@@ -29,6 +30,7 @@ export function DashboardFilterControls() {
       month: monthIsNoFilter ? "Semua Periode" : `${applied.months.length} periode`,
       category: applied.categories.length === 0 ? "Semua Kategori" : `${applied.categories.length} kategori`,
       branch: applied.branches.length === 0 ? "Semua Branch" : `${applied.branches.length} branch`,
+      keyword: applied.keywords.length === 0 ? "Semua Keyword" : `${applied.keywords.length} keyword`,
     };
   }, [applied, options.months]);
 
@@ -42,7 +44,10 @@ export function DashboardFilterControls() {
             </span>
             <span>Global Filter</span>
           </div>
-          <div className="max-w-xl text-sm leading-6 font-medium text-slate-500">Refine period, category, dan branch untuk membaca performa merchant lebih cepat.</div>
+          <div className="max-w-xl text-sm leading-6 font-medium text-slate-500">
+            Refine period, category, branch{hasKeywordFilter ? ", dan keyword" : ""} untuk membaca performa
+            merchant lebih cepat.
+          </div>
         </div>
         <div className="pill-accent rounded-full px-3 py-1.5 text-xs font-semibold">
           Latest update: {latestMonth ? getMonthLabel(latestMonth) : "-"}
@@ -53,6 +58,9 @@ export function DashboardFilterControls() {
         <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 font-semibold">{selectedSummary.month}</span>
         <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 font-semibold">{selectedSummary.category}</span>
         <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 font-semibold">{selectedSummary.branch}</span>
+        {hasKeywordFilter ? (
+          <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 font-semibold">{selectedSummary.keyword}</span>
+        ) : null}
       </div>
 
       <div className="flex items-center gap-2">
@@ -76,7 +84,7 @@ export function DashboardFilterControls() {
       </div>
 
       {isOpen ? (
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
+        <div className={`mt-5 grid gap-4 ${hasKeywordFilter ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
           <FilterColumn
             title="Periode"
             options={options.months}
@@ -105,7 +113,18 @@ export function DashboardFilterControls() {
             onToggle={(value) => setDraft({ branches: toggleValue(draft.branches, value) })}
           />
 
-          <div className="md:col-span-3">
+          {hasKeywordFilter ? (
+            <FilterColumn
+              title="Keyword"
+              options={options.keywords}
+              selected={draft.keywords}
+              onSelectAll={() => setDraft({ keywords: options.keywords.map((option) => option.value) })}
+              onUnselectAll={() => setDraft({ keywords: [] })}
+              onToggle={(value) => setDraft({ keywords: toggleValue(draft.keywords, value) })}
+            />
+          ) : null}
+
+          <div className={hasKeywordFilter ? "md:col-span-4" : "md:col-span-3"}>
             <button
               type="button"
               className="rounded-full bg-[#e60028] px-4 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#c70022]"

@@ -27,6 +27,7 @@ export async function GET(request: Request) {
   const selectedMonths = parseMonthParams(searchParams);
   const categoryFilters = parseFilterParams(searchParams, "category");
   const branchFilters = parseFilterParams(searchParams, "branch");
+  const keywordFilters = parseFilterParams(searchParams, "keyword");
 
   const latestMonth = selectedMonths[selectedMonths.length - 1];
 
@@ -46,9 +47,10 @@ export async function GET(request: Request) {
           and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($3::text[])
           and ($4::text[] is null or cardinality($4::text[]) = 0 or dc.category = any($4::text[]))
           and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
+          and ($6::text[] is null or cardinality($6::text[]) = 0 or dm.keyword_code = any($6::text[]))
         group by ft.status
       `,
-      [session.merchantKey, session.scopeType, selectedMonths, categoryFilters, branchFilters]
+      [session.merchantKey, session.scopeType, selectedMonths, categoryFilters, branchFilters, keywordFilters]
     ),
     query<{
       keyword: string;
@@ -71,10 +73,11 @@ export async function GET(request: Request) {
           and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($3::text[])
           and ($4::text[] is null or cardinality($4::text[]) = 0 or dc.category = any($4::text[]))
           and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
+          and ($6::text[] is null or cardinality($6::text[]) = 0 or dm.keyword_code = any($6::text[]))
         group by dm.keyword_code
         order by total_redeem desc
       `,
-      [session.merchantKey, session.scopeType, selectedMonths, categoryFilters, branchFilters]
+      [session.merchantKey, session.scopeType, selectedMonths, categoryFilters, branchFilters, keywordFilters]
     ),
     query<{
       keyword: string;
@@ -97,9 +100,10 @@ export async function GET(request: Request) {
           (vrmd.end_period - current_date)::int as days_to_end
         from vw_rule_merchant_dim vrmd
         where vrmd.merchant_key in (select merchant_key from merchant_scope)
+          and ($3::text[] is null or cardinality($3::text[]) = 0 or vrmd.keyword_code = any($3::text[]))
         order by vrmd.end_period asc
       `,
-      [session.merchantKey, session.scopeType]
+      [session.merchantKey, session.scopeType, keywordFilters]
     ),
     query<{
       transaction_at: string;
@@ -132,10 +136,11 @@ export async function GET(request: Request) {
           and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($3::text[])
           and ($4::text[] is null or cardinality($4::text[]) = 0 or dc.category = any($4::text[]))
           and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
+          and ($6::text[] is null or cardinality($6::text[]) = 0 or dm.keyword_code = any($6::text[]))
         order by ft.transaction_at desc
         limit 1000
       `,
-      [session.merchantKey, session.scopeType, selectedMonths, categoryFilters, branchFilters]
+      [session.merchantKey, session.scopeType, selectedMonths, categoryFilters, branchFilters, keywordFilters]
     ),
   ]);
 

@@ -59,6 +59,7 @@ export async function GET(request: Request) {
   const selectedMonths = parseMonthParams(searchParams);
   const categoryFilters = parseFilterParams(searchParams, "category");
   const branchFilters = parseFilterParams(searchParams, "branch");
+  const keywordFilters = parseFilterParams(searchParams, "keyword");
 
   const latestMonth = selectedMonths[selectedMonths.length - 1];
 
@@ -114,10 +115,11 @@ export async function GET(request: Request) {
           and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($3::text[])
           and ($4::text[] is null or cardinality($4::text[]) = 0 or dc.category = any($4::text[]))
           and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
+          and ($6::text[] is null or cardinality($6::text[]) = 0 or dm.keyword_code = any($6::text[]))
         group by dm.keyword_code
         order by total_redeem desc, dm.keyword_code asc
       `,
-      [session.merchantKey, session.scopeType, selectedMonths, categoryFilters, branchFilters]
+      [session.merchantKey, session.scopeType, selectedMonths, categoryFilters, branchFilters, keywordFilters]
     ),
     loadProviderBanners(),
   ]);
@@ -153,7 +155,9 @@ export async function GET(request: Request) {
       email: session.email,
     },
     banners,
-    programs: rules.rows.map((row) => ({
+    programs: rules.rows
+      .filter((row) => keywordFilters.length === 0 || keywordFilters.includes(row.keyword))
+      .map((row) => ({
       keyword: row.keyword,
       merchantName: row.merchant_name ?? row.keyword,
       uniqMerchant: row.uniq_merchant ?? row.keyword,
