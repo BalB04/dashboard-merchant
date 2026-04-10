@@ -1,79 +1,80 @@
 import { relations } from "drizzle-orm/relations";
 import {
-  adminSessions,
-  adminUsers,
   dimCategory,
-  dimCluster,
   dimMerchant,
+  dimCluster,
   dimRule,
   factClusterPoint,
   factTransaction,
+  adminUsers,
+  adminSessions,
+  users,
   merchantFeedback,
   merchantUsers,
-  users,
 } from "./schema";
 
-export const dimMerchantRelations = relations(dimMerchant, ({ one, many }) => ({
-  category: one(dimCategory, {
-    fields: [dimMerchant.categoryId],
-    references: [dimCategory.categoryId],
-  }),
-  cluster: one(dimCluster, {
-    fields: [dimMerchant.clusterId],
-    references: [dimCluster.clusterId],
-  }),
-  rules: many(dimRule),
-  transactions: many(factTransaction),
-}));
-
 export const dimCategoryRelations = relations(dimCategory, ({ many }) => ({
-  merchants: many(dimMerchant),
+  dimMerchants: many(dimMerchant),
 }));
 
 export const dimClusterRelations = relations(dimCluster, ({ many }) => ({
-  merchants: many(dimMerchant),
-  clusterPoints: many(factClusterPoint),
+  dimMerchants: many(dimMerchant),
+  factClusterPoints: many(factClusterPoint),
+}));
+
+export const dimMerchantRelations = relations(dimMerchant, ({ one, many }) => ({
+  dimCategory: one(dimCategory, {
+    fields: [dimMerchant.categoryId],
+    references: [dimCategory.categoryId],
+  }),
+  dimCluster: one(dimCluster, {
+    fields: [dimMerchant.clusterId],
+    references: [dimCluster.clusterId],
+  }),
+  dimRules: many(dimRule),
+  factTransactions: many(factTransaction),
 }));
 
 export const dimRuleRelations = relations(dimRule, ({ one, many }) => ({
-  merchant: one(dimMerchant, {
+  dimMerchant: one(dimMerchant, {
     fields: [dimRule.ruleMerchant],
     references: [dimMerchant.merchantKey],
   }),
-  transactions: many(factTransaction),
-}));
-
-export const factTransactionRelations = relations(factTransaction, ({ one }) => ({
-  merchant: one(dimMerchant, {
-    fields: [factTransaction.merchantKey],
-    references: [dimMerchant.merchantKey],
-  }),
-  rule: one(dimRule, {
-    fields: [factTransaction.ruleKey],
-    references: [dimRule.ruleKey],
-  }),
+  factTransactions: many(factTransaction),
 }));
 
 export const factClusterPointRelations = relations(factClusterPoint, ({ one }) => ({
-  cluster: one(dimCluster, {
+  dimCluster: one(dimCluster, {
     fields: [factClusterPoint.clusterId],
     references: [dimCluster.clusterId],
   }),
 }));
 
-export const usersRelations = relations(users, ({ many, one }) => ({
-  merchantUser: one(merchantUsers, {
-    fields: [users.id],
-    references: [merchantUsers.userId],
+export const factTransactionRelations = relations(factTransaction, ({ one }) => ({
+  dimMerchant: one(dimMerchant, {
+    fields: [factTransaction.merchantKey],
+    references: [dimMerchant.merchantKey],
   }),
-  feedbackEntries: many(merchantFeedback),
+  dimRule: one(dimRule, {
+    fields: [factTransaction.ruleKey],
+    references: [dimRule.ruleKey],
+  }),
 }));
 
-export const merchantUsersRelations = relations(merchantUsers, ({ one }) => ({
-  user: one(users, {
-    fields: [merchantUsers.userId],
-    references: [users.id],
+export const adminUsersRelations = relations(adminUsers, ({ many }) => ({
+  adminSessions: many(adminSessions),
+}));
+
+export const adminSessionsRelations = relations(adminSessions, ({ one }) => ({
+  adminUser: one(adminUsers, {
+    fields: [adminSessions.userId],
+    references: [adminUsers.id],
   }),
+}));
+
+export const usersRelations = relations(users, ({ many }) => ({
+  merchantFeedbacks: many(merchantFeedback),
+  merchantUsers: many(merchantUsers),
 }));
 
 export const merchantFeedbackRelations = relations(merchantFeedback, ({ one }) => ({
@@ -83,13 +84,9 @@ export const merchantFeedbackRelations = relations(merchantFeedback, ({ one }) =
   }),
 }));
 
-export const adminUsersRelations = relations(adminUsers, ({ many }) => ({
-  sessions: many(adminSessions),
-}));
-
-export const adminSessionsRelations = relations(adminSessions, ({ one }) => ({
-  user: one(adminUsers, {
-    fields: [adminSessions.userId],
-    references: [adminUsers.id],
+export const merchantUsersRelations = relations(merchantUsers, ({ one }) => ({
+  user: one(users, {
+    fields: [merchantUsers.userId],
+    references: [users.id],
   }),
 }));

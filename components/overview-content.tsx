@@ -256,7 +256,7 @@ export function OverviewContent() {
           </div>
           <div className="glass-panel rounded-[20px] border border-slate-200 p-4 shadow-sm">
             <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-              Active Rules
+              Active Merchant
             </div>
             <div className="mt-2 text-[1.75rem] font-semibold leading-none text-slate-900">
               {fmt(data.keywordRules.filter((row) => row.status === "active").length)}
