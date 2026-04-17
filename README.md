@@ -9,7 +9,10 @@ Create `.env` with:
 ```bash
 DATABASE_URL=postgres://user:pass@host:5432/dbname
 AUTH_SESSION_SECRET=replace-with-random-long-secret
+ADMIN_ASSET_BASE_URL=http://localhost:3000
 ```
+
+`ADMIN_ASSET_BASE_URL` dipakai agar merchant dashboard bisa memuat image upload dari `dashboard_admin` saat DB menyimpan path relatif seperti `/uploads/banner-assets/...`.
 
 ### Database setup
 
