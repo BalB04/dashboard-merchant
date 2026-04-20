@@ -127,8 +127,22 @@ export function ProgramsContent() {
   const [data, setData] = React.useState<ProgramsResponse | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [selectedKeyword, setSelectedKeyword] = React.useState<string | null>(null);
+  const [selectedBanner, setSelectedBanner] = React.useState<Banner | null>(null);
   const [todayIso] = React.useState(() => new Date().toISOString().slice(0, 10));
   const carouselRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    if (!selectedBanner) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedBanner(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedBanner]);
 
   React.useEffect(() => {
     let active = true;
@@ -186,6 +200,10 @@ export function ProgramsContent() {
     0,
     2,
   );
+  const selectedBannerImage =
+    selectedBanner?.imageUrl ??
+    fallbackPromotions.find((banner) => banner.id === selectedBanner?.id)?.imageUrl ??
+    fallbackPromotions[0]?.imageUrl;
 
   const activeProgramCount = activePrograms.length;
   const selectedProgram =
@@ -438,7 +456,8 @@ export function ProgramsContent() {
 
         <div className="grid gap-3 xl:grid-cols-2">
           {recommendedPromotions.map((banner, index) => {
-            const image = banner.imageUrl || fallbackPromotions[index % fallbackPromotions.length]?.imageUrl;
+            const image =
+              banner.imageUrl || fallbackPromotions[index % fallbackPromotions.length]?.imageUrl;
 
             return (
               <article
@@ -466,7 +485,15 @@ export function ProgramsContent() {
                     <h3 className="mt-3 max-w-[18ch] text-[22px] font-semibold leading-[1.05] tracking-tight">
                       {banner.title}
                     </h3>
-                    <p className="mt-2 max-w-md text-[11px] leading-5 text-white/92">
+                    <p
+                      className="mt-2 max-w-md overflow-hidden text-[11px] leading-5 text-white/92"
+                      style={{
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical",
+                        WebkitLineClamp: 2,
+                      }}
+                      title={banner.subtitle}
+                    >
                       {banner.subtitle}
                     </p>
                     <button
@@ -476,6 +503,7 @@ export function ProgramsContent() {
                           ? "bg-blue-600 text-white hover:bg-blue-500"
                           : "bg-white text-slate-900 hover:bg-slate-100"
                       }`}
+                      onClick={() => setSelectedBanner(banner)}
                     >
                       {banner.cta || "Launch promotion"}
                     </button>
@@ -486,6 +514,63 @@ export function ProgramsContent() {
           })}
         </div>
       </section>
+
+      {selectedBanner ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm"
+          onClick={() => setSelectedBanner(null)}
+          role="presentation"
+        >
+          <div
+            className="max-h-[calc(100vh-3rem)] w-fit max-w-[min(92vw,980px)] overflow-y-auto rounded-[28px] border border-white/70 bg-white p-5 shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="promotion-modal-title"
+          >
+            {selectedBannerImage ? (
+              <div className="relative mb-4 flex items-center justify-center overflow-hidden rounded-[22px] bg-slate-100 p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={selectedBannerImage}
+                  alt={selectedBanner.title}
+                  className="h-auto w-auto max-h-[calc(100vh-16rem)] max-w-full object-contain"
+                />
+              </div>
+            ) : null}
+
+            <div className="flex items-start justify-between gap-4">
+              <div className="pr-3">
+                <h3
+                  id="promotion-modal-title"
+                  className="text-[22px] font-semibold tracking-tight text-slate-900"
+                >
+                  {selectedBanner.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{selectedBanner.subtitle}</p>
+              </div>
+              <button
+                type="button"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+                onClick={() => setSelectedBanner(null)}
+                aria-label="Close promotion popup"
+              >
+                <span className="text-lg leading-none">×</span>
+              </button>
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-slate-700"
+                onClick={() => setSelectedBanner(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -512,9 +597,7 @@ function FeatureMetric({
 }) {
   return (
     <div className="rounded-[14px] border border-white/22 bg-white/18 p-2 backdrop-blur-sm">
-      <div className="text-[8px] font-bold uppercase tracking-[0.14em] text-white/72">
-        {label}
-      </div>
+      <div className="text-[8px] font-bold uppercase tracking-[0.14em] text-white/72">{label}</div>
       <div className={`mt-1 text-[15px] font-bold text-white/95 ${accent ?? ""}`}>{value}</div>
     </div>
   );
