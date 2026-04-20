@@ -21,6 +21,7 @@ import entertainmentImage from "../images/entertainment.jpg";
 import shoppingImage from "../images/shopping.jpg";
 
 type ProgramRow = {
+  ruleKey: string;
   keyword: string;
   merchantName: string;
   uniqMerchant: string;
@@ -28,6 +29,7 @@ type ProgramRow = {
   startPeriod: string;
   endPeriod: string;
   status: "active" | "upcoming" | "expired";
+  imageUrl: string | null;
   redeem: number;
   uniqueRedeemer: number;
   burningPoin: number;
@@ -36,7 +38,7 @@ type ProgramRow = {
 
 type Banner = {
   id: string;
-  imageKey: "dining" | "entertainment" | "shopping";
+  imageUrl?: string;
   title: string;
   subtitle: string;
   cta: string;
@@ -60,12 +62,6 @@ const compactFmt = new Intl.NumberFormat("en-US", {
   notation: "compact",
   maximumFractionDigits: 1,
 });
-
-const providerBannerImageByKey = {
-  dining: diningImage,
-  entertainment: entertainmentImage,
-  shopping: shoppingImage,
-} as const;
 
 const featureImages = [shoppingImage, entertainmentImage, diningImage] as const;
 
@@ -96,14 +92,14 @@ const promotionAccentByIndex = [
 const fallbackPromotions: Banner[] = [
   {
     id: "fallback-prime-placement",
-    imageKey: "shopping",
+    imageUrl: shoppingImage.src,
     title: "Prime Placement Booster",
     subtitle: "Boost placement for high-intent shoppers across merchant discovery surfaces.",
     cta: "Upgrade now",
   },
   {
     id: "fallback-retargeting",
-    imageKey: "entertainment",
+    imageUrl: entertainmentImage.src,
     title: "Smart Retargeting Engine",
     subtitle: "Reactivate visitors who clicked but did not redeem with automated promo loops.",
     cta: "Activate AI",
@@ -277,7 +273,7 @@ export function ProgramsContent() {
             >
               {carouselPrograms.map((program, index) => {
                 const isSelected = selectedProgram?.keyword === program.keyword;
-                const image = featureImages[index % featureImages.length];
+                const fallbackImage = featureImages[index % featureImages.length];
                 const status = statusTheme[program.status];
                 const daysLeft =
                   program.status === "expired" ? null : daysBetween(program.endPeriod, todayIso);
@@ -295,74 +291,79 @@ export function ProgramsContent() {
                       }
                     }}
                     aria-pressed={isSelected}
-                    className={`group relative min-w-[320px] snap-start overflow-hidden rounded-[20px] bg-slate-950 transition duration-300 md:min-w-[360px] xl:min-w-[420px] ${
+                    className={`group relative min-w-[320px] snap-start overflow-hidden rounded-[25px] bg-slate-950 transition duration-300 md:min-w-[360px] xl:min-w-[420px] ${
                       isSelected
-                        ? "scale-[1.01] ring-2 ring-sky-400/80 shadow-[0_18px_36px_rgba(14,165,233,0.22)] opacity-100"
+                        ? "scale-[1.01] shadow-[0_18px_36px_rgba(14,165,233,0.22)] opacity-100"
                         : "opacity-58 shadow-[0_8px_18px_rgba(15,23,42,0.10)] saturate-[0.82] hover:opacity-82"
                     }`}
                   >
-                    <Image
-                      src={image}
-                      alt={`${program.programName} banner`}
-                      className={`absolute inset-0 h-full w-full object-cover transition duration-700 ${isSelected ? "scale-[1.02]" : "group-hover:scale-[1.03]"}`}
-                      sizes="(min-width: 1280px) 40vw, 100vw"
-                    />
-                    <div
-                      className={`absolute inset-0 ${
-                        isSelected
-                          ? "bg-[linear-gradient(180deg,rgba(15,23,42,0.08)_0%,rgba(15,23,42,0.26)_40%,rgba(15,23,42,0.78)_100%)]"
-                          : "bg-[linear-gradient(180deg,rgba(15,23,42,0.25)_0%,rgba(15,23,42,0.50)_40%,rgba(15,23,42,0.92)_100%)]"
-                      }`}
-                    />
+                    {program.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={program.imageUrl}
+                        alt={`${program.programName} banner`}
+                        className={`absolute inset-0 h-full w-full object-cover transition duration-700 ${isSelected ? "scale-[1.02]" : "group-hover:scale-[1.03]"}`}
+                      />
+                    ) : (
+                      <Image
+                        src={fallbackImage}
+                        alt={`${program.programName} banner`}
+                        className={`absolute inset-0 h-full w-full object-cover transition duration-700 ${isSelected ? "scale-[1.02]" : "group-hover:scale-[1.03]"}`}
+                        sizes="(min-width: 1280px) 40vw, 100vw"
+                      />
+                    )}
+                    <div className="absolute inset-0 backdrop-blur-[1.5px]" />
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.14),transparent_32%)]" />
 
                     <div className="relative flex min-h-[168px] flex-col justify-between p-3.5 text-white md:min-h-[182px]">
-                      <div className="flex items-start justify-between gap-2">
-                        <div
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] ${status.chip}`}
-                        >
-                          {status.label}
-                        </div>
-                        {isSelected ? (
-                          <span className="rounded-full border border-white/30 bg-white/14 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.14em] text-white">
-                            Selected
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <div>
-                        <p className="mt-1.5 max-w-md text-[10px] leading-4 text-white/72">
-                          {program.uniqMerchant}
-                        </p>
-                        <h2 className="mt-1.5 max-w-[20ch] text-[18px] font-semibold leading-[1.05] tracking-tight md:text-[19px]">
-                          {program.merchantName}
-                        </h2>
-                        <div className="text-[8px] font-medium uppercase my-2 tracking-[0.16em] text-white/55">
-                          {program.keyword}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-3 gap-1.5">
-                          <FeatureMetric label="Redeems" value={fmt(program.redeem)} />
-                          <FeatureMetric
-                            label="Unique"
-                            value={fmt(program.uniqueRedeemer)}
-                            accent="text-white"
-                          />
-                          <FeatureMetric
-                            label="Status"
-                            value={status.label}
-                            accent="text-emerald-300"
-                          />
+                      <div className="rounded-[22px] border border-white/18 bg-black/34 p-3.5 backdrop-blur-md">
+                        <div className="flex items-start justify-between gap-2">
+                          <div
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] ${status.chip}`}
+                          >
+                            {status.label}
+                          </div>
+                          {isSelected ? (
+                            <span className="rounded-full border border-white/30 bg-white/14 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-white">
+                              Selected
+                            </span>
+                          ) : null}
                         </div>
 
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="inline-flex items-center gap-1 text-[9px] text-white/65">
-                            <CalendarDays className="h-2.5 w-2.5" />
-                            {daysLeft === null
-                              ? `Ended ${program.endPeriod}`
-                              : `Valid until ${program.endPeriod}`}
+                        <div className="mt-2.5">
+                          <p className="max-w-md text-[11px] leading-5 text-white/92">
+                            {program.uniqMerchant}
+                          </p>
+                          <h2 className="mt-3 max-w-[18ch] text-[22px] font-semibold leading-[1.05] tracking-tight">
+                            {program.merchantName}
+                          </h2>
+                          <div className="my-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/82">
+                            {program.keyword}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-3 gap-1.5">
+                            <FeatureMetric label="Redeems" value={fmt(program.redeem)} />
+                            <FeatureMetric
+                              label="Unique"
+                              value={fmt(program.uniqueRedeemer)}
+                              accent="text-white"
+                            />
+                            <FeatureMetric
+                              label="Status"
+                              value={status.label}
+                              accent="text-emerald-300"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="inline-flex items-center gap-1 text-[9px] text-white/90">
+                              <CalendarDays className="h-2.5 w-2.5" />
+                              {daysLeft === null
+                                ? `Ended ${program.endPeriod}`
+                                : `Valid until ${program.endPeriod}`}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -437,44 +438,48 @@ export function ProgramsContent() {
 
         <div className="grid gap-3 xl:grid-cols-2">
           {recommendedPromotions.map((banner, index) => {
-            const image = providerBannerImageByKey[banner.imageKey];
+            const image = banner.imageUrl || fallbackPromotions[index % fallbackPromotions.length]?.imageUrl;
 
             return (
               <article
                 key={banner.id}
                 className={`group relative overflow-hidden rounded-[22px]  bg-slate-950 p-4 text-white shadow-[0_14px_28px_rgba(15,23,42,0.15)]`}
               >
-                <Image
-                  src={image}
-                  alt={banner.title}
-                  className="absolute inset-0 h-full w-full object-cover opacity-50 transition duration-700 group-hover:scale-105"
-                  sizes="(min-width: 1280px) 36vw, 100vw"
-                />
+                {image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={image}
+                    alt={banner.title}
+                    className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  />
+                ) : null}
                 <div
-                  className={`absolute inset-0 bg-gradient-to-r ${promotionAccentByIndex[index % promotionAccentByIndex.length]} opacity-90`}
+                  className={`absolute inset-0 bg-gradient-to-r ${promotionAccentByIndex[index % promotionAccentByIndex.length]} opacity-50 transition-opacity duration-700 group-hover:opacity-25 backdrop-blur-[1.5px]`}
                 />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.14),transparent_35%)]" />
 
                 <div className="relative min-h-[104px]">
-                  <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/60">
-                    {index === 0 ? "Placement booster" : "Smart engine"}
+                  <div className="w-fit max-w-full rounded-[22px] border border-white/18 bg-black/34 p-3.5 backdrop-blur-md">
+                    <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/82">
+                      {index === 0 ? "Placement booster" : "Smart engine"}
+                    </div>
+                    <h3 className="mt-3 max-w-[18ch] text-[22px] font-semibold leading-[1.05] tracking-tight">
+                      {banner.title}
+                    </h3>
+                    <p className="mt-2 max-w-md text-[11px] leading-5 text-white/92">
+                      {banner.subtitle}
+                    </p>
+                    <button
+                      type="button"
+                      className={`mt-4 rounded-full px-3.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] transition ${
+                        index === 1
+                          ? "bg-blue-600 text-white hover:bg-blue-500"
+                          : "bg-white text-slate-900 hover:bg-slate-100"
+                      }`}
+                    >
+                      {banner.cta || "Launch promotion"}
+                    </button>
                   </div>
-                  <h3 className="mt-3 max-w-[18ch] text-[22px] font-semibold leading-[1.05] tracking-tight">
-                    {banner.title}
-                  </h3>
-                  <p className="mt-2 max-w-md text-[11px] leading-5 text-white/78">
-                    {banner.subtitle}
-                  </p>
-                  <button
-                    type="button"
-                    className={`mt-4 rounded-full px-3.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] transition ${
-                      index === 1
-                        ? "bg-blue-600 text-white hover:bg-blue-500"
-                        : "bg-white text-slate-900 hover:bg-slate-100"
-                    }`}
-                  >
-                    {banner.cta || "Launch promotion"}
-                  </button>
                 </div>
               </article>
             );
@@ -506,11 +511,11 @@ function FeatureMetric({
   accent?: string;
 }) {
   return (
-    <div className="rounded-[14px] border border-white/10 bg-white/6 p-2 backdrop-blur-sm">
-      <div className="text-[8px] font-semibold uppercase tracking-[0.14em] text-white/45">
+    <div className="rounded-[14px] border border-white/22 bg-white/18 p-2 backdrop-blur-sm">
+      <div className="text-[8px] font-bold uppercase tracking-[0.14em] text-white/72">
         {label}
       </div>
-      <div className={`mt-1 text-[13px] font-semibold text-white ${accent ?? ""}`}>{value}</div>
+      <div className={`mt-1 text-[15px] font-bold text-white/95 ${accent ?? ""}`}>{value}</div>
     </div>
   );
 }

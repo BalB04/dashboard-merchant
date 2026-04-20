@@ -15,10 +15,23 @@ const monthLabel = (value: string) => {
 
 const toNumber = (value: unknown) => Number(value ?? 0);
 
+const adminAssetBaseUrl = (
+  process.env.ADMIN_ASSET_BASE_URL ??
+  process.env.NEXT_PUBLIC_ADMIN_ASSET_BASE_URL ??
+  "http://localhost:3000"
+).replace(/\/$/, "");
+
+const resolveAdminAssetUrl = (value: string | null | undefined) => {
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (!value.startsWith("/")) return value;
+  return `${adminAssetBaseUrl}${value}`;
+};
+
 const loadProviderBanners = async () => {
   const result = await query<{
     id: string;
-    image_key: string;
+    image_url: string;
     title: string;
     subtitle: string;
     cta: string;
@@ -26,7 +39,7 @@ const loadProviderBanners = async () => {
     `
       select
         id::text as id,
-        image_key,
+        image_url,
         title,
         subtitle,
         cta
@@ -40,11 +53,40 @@ const loadProviderBanners = async () => {
 
   return result.rows.map((row) => ({
     id: row.id,
-    imageKey: row.image_key,
+    imageUrl: resolveAdminAssetUrl(row.image_url),
     title: row.title,
     subtitle: row.subtitle,
     cta: row.cta,
   }));
+};
+
+const loadProgramBannerAssets = async (ruleKeys: string[], keywordCodes: string[]) => {
+  if (ruleKeys.length === 0 && keywordCodes.length === 0) {
+    return [];
+  }
+
+  const result = await query<{
+    rule_key: string | null;
+    keyword_code: string | null;
+    image_url: string;
+  }>(
+    `
+      select
+        rule_key::text as rule_key,
+        keyword_code,
+        image_url
+      from program_banner_assets
+      where is_active = true
+        and (
+          (cardinality($1::uuid[]) > 0 and rule_key = any($1::uuid[]))
+          or
+          (cardinality($2::text[]) > 0 and keyword_code = any($2::text[]))
+        )
+    `,
+    [ruleKeys, keywordCodes]
+  );
+
+  return result.rows;
 };
 
 const scopedMerchantCte = merchantScopeCte(1, 2);
@@ -65,6 +107,7 @@ export async function GET(request: Request) {
 
   const [rules, keywordMetrics, banners] = await Promise.all([
     query<{
+      rule_key: string;
       keyword: string;
       merchant_name: string | null;
       uniq_merchant: string | null;
@@ -75,6 +118,7 @@ export async function GET(request: Request) {
       `
         ${scopedMerchantCte}
         select
+          vrmd.rule_key::text as rule_key,
           vrmd.keyword_code as keyword,
           dm.merchant_name as merchant_name,
           dm.uniq_merchant as uniq_merchant,
@@ -124,6 +168,23 @@ export async function GET(request: Request) {
     loadProviderBanners(),
   ]);
 
+  const programBannerAssets = await loadProgramBannerAssets(
+    [...new Set(rules.rows.map((row) => row.rule_key).filter(Boolean))],
+    [...new Set(rules.rows.map((row) => row.keyword).filter(Boolean))]
+  );
+
+  const assetByRuleKey = new Map(
+    programBannerAssets
+      .filter((asset) => asset.rule_key)
+      .map((asset) => [asset.rule_key as string, resolveAdminAssetUrl(asset.image_url)])
+  );
+
+  const assetByKeywordCode = new Map(
+    programBannerAssets
+      .filter((asset) => asset.keyword_code)
+      .map((asset) => [asset.keyword_code as string, resolveAdminAssetUrl(asset.image_url)])
+  );
+
   const metricsByKeyword = new Map(
     keywordMetrics.rows.map((row) => [
       row.keyword,
@@ -158,6 +219,7 @@ export async function GET(request: Request) {
     programs: rules.rows
       .filter((row) => keywordFilters.length === 0 || keywordFilters.includes(row.keyword))
       .map((row) => ({
+      ruleKey: row.rule_key,
       keyword: row.keyword,
       merchantName: row.merchant_name ?? row.keyword,
       uniqMerchant: row.uniq_merchant ?? row.keyword,
@@ -165,6 +227,7 @@ export async function GET(request: Request) {
       startPeriod: row.start_period,
       endPeriod: row.end_period,
       status: row.status,
+      imageUrl: assetByRuleKey.get(row.rule_key) ?? assetByKeywordCode.get(row.keyword) ?? null,
       redeem: metricsByKeyword.get(row.keyword)?.redeem ?? 0,
       uniqueRedeemer: metricsByKeyword.get(row.keyword)?.uniqueRedeemer ?? 0,
       burningPoin: metricsByKeyword.get(row.keyword)?.burningPoin ?? 0,
