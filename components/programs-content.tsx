@@ -129,7 +129,8 @@ export function ProgramsContent() {
   const [selectedKeyword, setSelectedKeyword] = React.useState<string | null>(null);
   const [selectedBanner, setSelectedBanner] = React.useState<Banner | null>(null);
   const [todayIso] = React.useState(() => new Date().toISOString().slice(0, 10));
-  const carouselRef = React.useRef<HTMLDivElement | null>(null);
+  const programCarouselRef = React.useRef<HTMLDivElement | null>(null);
+  const promotionCarouselRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
     if (!selectedBanner) return;
@@ -196,10 +197,7 @@ export function ProgramsContent() {
   const programs = data.programs;
   const activePrograms = programs.filter((program) => program.status === "active");
   const carouselPrograms = activePrograms.length ? activePrograms : programs;
-  const recommendedPromotions = (data.banners.length ? data.banners : fallbackPromotions).slice(
-    0,
-    2,
-  );
+  const recommendedPromotions = data.banners.length ? data.banners : fallbackPromotions;
   const selectedBannerImage =
     selectedBanner?.imageUrl ??
     fallbackPromotions.find((banner) => banner.id === selectedBanner?.id)?.imageUrl ??
@@ -212,8 +210,11 @@ export function ProgramsContent() {
     programs[0] ??
     null;
 
-  const scrollCarousel = (direction: "prev" | "next") => {
-    const node = carouselRef.current;
+  const scrollCarousel = (
+    ref: React.RefObject<HTMLDivElement | null>,
+    direction: "prev" | "next",
+  ) => {
+    const node = ref.current;
     if (!node) return;
     const amount = Math.max(node.clientWidth * 0.72, 240);
     node.scrollBy({ left: direction === "next" ? amount : -amount, behavior: "smooth" });
@@ -271,7 +272,7 @@ export function ProgramsContent() {
               <button
                 type="button"
                 className="programs-carousel-button inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
-                onClick={() => scrollCarousel("prev")}
+                onClick={() => scrollCarousel(programCarouselRef, "prev")}
                 aria-label="Previous programs"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -279,14 +280,14 @@ export function ProgramsContent() {
               <button
                 type="button"
                 className="programs-carousel-button inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
-                onClick={() => scrollCarousel("next")}
+                onClick={() => scrollCarousel(programCarouselRef, "next")}
                 aria-label="Next programs"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
             <div
-              ref={carouselRef}
+              ref={programCarouselRef}
               className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
               {carouselPrograms.map((program, index) => {
@@ -449,12 +450,37 @@ export function ProgramsContent() {
       </section>
 
       <section className="space-y-4">
-        <div>
-          <div className="text-[24px] font-semibold tracking-tight text-slate-900">Promotions</div>
-          <div className="text-sm text-slate-500"></div>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-[24px] font-semibold tracking-tight text-slate-900">
+              Promotions
+            </div>
+            <div className="text-sm text-slate-500"></div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              className="programs-carousel-button inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
+              onClick={() => scrollCarousel(promotionCarouselRef, "prev")}
+              aria-label="Previous promotions"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className="programs-carousel-button inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
+              onClick={() => scrollCarousel(promotionCarouselRef, "next")}
+              aria-label="Next promotions"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
-        <div className="grid gap-3 xl:grid-cols-2">
+        <div
+          ref={promotionCarouselRef}
+          className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {recommendedPromotions.map((banner, index) => {
             const image =
               banner.imageUrl || fallbackPromotions[index % fallbackPromotions.length]?.imageUrl;
@@ -462,7 +488,7 @@ export function ProgramsContent() {
             return (
               <article
                 key={banner.id}
-                className={`group relative overflow-hidden rounded-[22px]  bg-slate-950 p-4 text-white shadow-[0_14px_28px_rgba(15,23,42,0.15)]`}
+                className="group relative min-w-[320px] snap-start overflow-hidden rounded-[22px] bg-slate-950 p-4 text-white shadow-[0_14px_28px_rgba(15,23,42,0.15)] md:min-w-[360px] xl:min-w-[420px]"
               >
                 {image ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -479,9 +505,9 @@ export function ProgramsContent() {
 
                 <div className="relative min-h-[104px]">
                   <div className="w-fit max-w-full rounded-[22px] border border-white/18 bg-black/34 p-3.5 backdrop-blur-md">
-                    <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/82">
+                    {/* <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/82">
                       {index === 0 ? "Placement booster" : "Smart engine"}
-                    </div>
+                    </div> */}
                     <h3 className="mt-3 max-w-[18ch] text-[22px] font-semibold leading-[1.05] tracking-tight">
                       {banner.title}
                     </h3>
@@ -498,11 +524,7 @@ export function ProgramsContent() {
                     </p>
                     <button
                       type="button"
-                      className={`mt-4 rounded-full px-3.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] transition ${
-                        index === 1
-                          ? "bg-blue-600 text-white hover:bg-blue-500"
-                          : "bg-white text-slate-900 hover:bg-slate-100"
-                      }`}
+                      className={`mt-4 rounded-full px-3.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] transition bg-white text-slate-900 hover:bg-slate-100`}
                       onClick={() => setSelectedBanner(banner)}
                     >
                       {banner.cta || "Launch promotion"}
