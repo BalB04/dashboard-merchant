@@ -226,6 +226,7 @@ export async function GET(request: Request) {
       msisdn: string;
       category: string;
       branch: string;
+      cluster: string;
     }>(
       `
         ${scopedMerchantCte}
@@ -238,7 +239,8 @@ export async function GET(request: Request) {
           (ft.qty * ft.point_redeem)::bigint as redeem_point_total,
           ft.msisdn as msisdn,
           dc.category as category,
-          dcl.branch as branch
+          dcl.branch as branch,
+          dcl.cluster as cluster
         from fact_transaction ft
         join dim_merchant dm on dm.merchant_key = ft.merchant_key
         join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
@@ -322,6 +324,7 @@ export async function GET(request: Request) {
       msisdn: row.msisdn,
       category: row.category,
       branch: row.branch,
+      cluster: row.cluster,
     })),
   });
 }

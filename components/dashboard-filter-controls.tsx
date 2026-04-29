@@ -45,7 +45,7 @@ export function DashboardFilterControls() {
             <span>Global Filter</span>
           </div>
           <div className="max-w-xl text-sm leading-6 font-medium text-slate-500">
-            Refine period, category, branch{hasKeywordFilter ? ", dan keyword" : ""} untuk membaca performa
+            Atur filter period, category, branch{hasKeywordFilter ? ", dan keyword" : ""} untuk membaca performa
             merchant lebih cepat.
           </div>
         </div>

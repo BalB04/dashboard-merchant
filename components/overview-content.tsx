@@ -47,6 +47,7 @@ type OverviewResponse = {
     redeemPointTotal: number;
     msisdn: string;
     branch: string;
+    cluster: string;
   }[];
 };
 
@@ -192,12 +193,12 @@ export function OverviewContent() {
 
   if (!data) {
     return (
-      <div className="px-6 py-6 text-sm text-slate-500">{loading ? "Loading..." : "No data"}</div>
+      <div className="px-6 py-6 text-sm text-slate-500">{loading ? "Memuat..." : "Tidak ada data"}</div>
     );
   }
 
   const kpis = [
-    { label: "Total Transaksi", value: data.myKpi.redeem, prev: data.myKpi.previous.redeem },
+    { label: "Total Transaksi Berhasil", value: data.myKpi.redeem, prev: data.myKpi.previous.redeem },
     {
       label: "Unique Redeemer",
       value: data.myKpi.uniqueRedeemer,
@@ -240,7 +241,7 @@ export function OverviewContent() {
         <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[520px]">
           <div className="glass-panel rounded-[20px] border border-slate-200 p-4 shadow-sm">
             <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-              Current Month
+              Bulan ini
             </div>
             <div className="mt-2 text-[1.75rem] font-semibold leading-none text-slate-900">
               {data.monthLabel}
@@ -248,7 +249,7 @@ export function OverviewContent() {
           </div>
           <div className="glass-panel rounded-[20px] border border-slate-200 p-4 shadow-sm">
             <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-              Transactions
+              Transaksi
             </div>
             <div className="mt-2 text-[1.75rem] font-semibold leading-none text-slate-900">
               {fmt(data.transactions.length)}
@@ -256,7 +257,7 @@ export function OverviewContent() {
           </div>
           <div className="glass-panel rounded-[20px] border border-slate-200 p-4 shadow-sm">
             <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-              Active Merchant
+              Keyword Aktif
             </div>
             <div className="mt-2 text-[1.75rem] font-semibold leading-none text-slate-900">
               {fmt(data.keywordRules.filter((row) => row.status === "active").length)}
@@ -295,7 +296,7 @@ export function OverviewContent() {
                 <div
                   className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${isUp ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
                 >
-                  {isUp ? "+" : ""}
+                  MoM {isUp ? " +" : ""}
                   {growth.toFixed(1)}%
                 </div>
               </div>
@@ -353,7 +354,7 @@ export function OverviewContent() {
               className="text-xs font-semibold text-blue-600"
               href="/operational?focus=trend#trend"
             >
-              View more
+              Lihat selengkapnya
             </Link>
           </div>
           <div className="space-y-2 md:hidden">
@@ -417,7 +418,7 @@ export function OverviewContent() {
               className="text-xs font-semibold text-blue-600"
               href="/operational?focus=rules#rules"
             >
-              View more
+              Lihat selengkapnya
             </Link>
           </div>
           <div className="space-y-2 md:hidden">
@@ -490,17 +491,16 @@ export function OverviewContent() {
               <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-rose-50 text-red-700">
                 <Receipt className="h-4 w-4" />
               </span>
-              <span>My Transaction Detail</span>
+              <span>Detail Transaksi</span>
             </div>
             <div className="mt-1 text-xs text-slate-500">
-              Search and paginate merchant transactions
             </div>
           </div>
           <Link
             className="text-xs font-semibold text-blue-600"
             href="/operational?focus=transactions#transactions"
           >
-            View more
+            Lihat selengkapnya
           </Link>
         </div>
 
@@ -512,7 +512,7 @@ export function OverviewContent() {
               setSearch(event.target.value);
               setPage(1);
             }}
-            placeholder="Search keyword / status / branch"
+            placeholder="Cari keyword / status / branch"
             className="soft-input w-full rounded-full py-3 pl-11 pr-4 text-sm"
           />
         </div>
@@ -543,20 +543,23 @@ export function OverviewContent() {
                 </div>
                 <div>Branch</div>
                 <div className="text-right font-semibold text-slate-800">{row.branch}</div>
+                <div>Cluster</div>
+                <div className="text-right font-semibold text-slate-800">{row.cluster}</div>
               </div>
             </div>
           ))}
         </div>
         <div className="hidden overflow-auto md:block">
-          <table className="data-table w-full min-w-[860px] text-sm">
+          <table className="data-table w-full min-w-[980px] text-sm">
             <thead className="bg-[#0E1A35] text-white">
               <tr>
-                <th className="px-3 py-2 text-left">Time</th>
+                <th className="px-3 py-2 text-left">Waktu</th>
                 <th className="px-3 py-2 text-left">Keyword</th>
                 <th className="px-3 py-2 text-left">Status</th>
                 <th className="px-3 py-2 text-left">Qty</th>
                 <th className="px-3 py-2 text-left">Total</th>
                 <th className="px-3 py-2 text-left">Branch</th>
+                <th className="px-3 py-2 text-left">Cluster</th>
               </tr>
             </thead>
             <tbody>
@@ -579,6 +582,7 @@ export function OverviewContent() {
                   <td className="px-3 py-2">{fmt(row.qty)}</td>
                   <td className="px-3 py-2">{fmt(row.redeemPointTotal)}</td>
                   <td className="px-3 py-2">{row.branch}</td>
+                  <td className="px-3 py-2">{row.cluster}</td>
                 </tr>
               ))}
             </tbody>

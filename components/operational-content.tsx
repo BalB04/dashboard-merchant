@@ -29,6 +29,7 @@ type OperationalResponse = {
     msisdn: string;
     category: string;
     branch: string;
+    cluster: string;
   }[];
 };
 
@@ -125,7 +126,7 @@ export function OperationalContent() {
     const term = search.trim().toLowerCase();
     if (!term) return rows;
     return rows.filter((row) =>
-      `${row.keyword} ${row.status} ${row.category} ${row.branch}`.toLowerCase().includes(term)
+      `${row.keyword} ${row.status} ${row.category} ${row.branch} ${row.cluster}`.toLowerCase().includes(term)
     );
   }, [data?.transactions, search]);
 
@@ -137,7 +138,7 @@ export function OperationalContent() {
   }, [filteredRows, page]);
 
   if (!data) {
-    return <div className="px-6 py-6 text-sm text-slate-500">{loading ? "Loading..." : "No data"}</div>;
+    return <div className="px-6 py-6 text-sm text-slate-500">{loading ? "Memuat..." : "Tidak ada data"}</div>;
   }
 
   return (
@@ -145,7 +146,7 @@ export function OperationalContent() {
       
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-start justify-between gap-3">
-          <div className="text-xl font-semibold text-slate-900">Operational</div>
+          <div className="text-xl font-semibold text-slate-900">Operasional</div>
           <div className="rounded-md bg-red-600 px-2.5 py-1 text-xs font-semibold text-white">Merchant</div>
         </div>
       </div>
@@ -284,7 +285,7 @@ export function OperationalContent() {
               </span>
               <span>My Transaction Detail</span>
             </div>
-            <div className="mt-1 text-xs text-slate-500">Search and paginate merchant transactions</div>
+            <div className="mt-1 text-xs text-slate-500">Cari dan telusuri transaksi merchant</div>
           </div>
         </div>
 
@@ -296,7 +297,7 @@ export function OperationalContent() {
               setSearch(event.target.value);
               setPage(1);
             }}
-            placeholder="Search keyword / status / category / branch"
+            placeholder="Cari keyword / status / category / branch / cluster"
             className="soft-input w-full rounded-full py-3 pl-11 pr-4 text-sm"
           />
         </div>
@@ -323,12 +324,14 @@ export function OperationalContent() {
                 <div className="text-right font-semibold text-slate-800">{row.category}</div>
                 <div>Branch</div>
                 <div className="text-right font-semibold text-slate-800">{row.branch}</div>
+                <div>Cluster</div>
+                <div className="text-right font-semibold text-slate-800">{row.cluster}</div>
               </div>
             </div>
           ))}
         </div>
         <div className="hidden overflow-auto md:block">
-          <table className="data-table w-full min-w-[860px] text-sm">
+          <table className="data-table w-full min-w-[980px] text-sm">
             <thead className="bg-[#0E1A35] text-white">
               <tr>
                 <th className="px-3 py-2 text-left">Time</th>
@@ -339,6 +342,7 @@ export function OperationalContent() {
                 <th className="px-3 py-2 text-left">Total</th>
                 <th className="px-3 py-2 text-left">Category</th>
                 <th className="px-3 py-2 text-left">Branch</th>
+                <th className="px-3 py-2 text-left">Cluster</th>
               </tr>
             </thead>
             <tbody>
@@ -354,6 +358,7 @@ export function OperationalContent() {
                   <td className="px-3 py-2">{fmt(row.redeemPointTotal)}</td>
                   <td className="px-3 py-2">{row.category}</td>
                   <td className="px-3 py-2">{row.branch}</td>
+                  <td className="px-3 py-2">{row.cluster}</td>
                 </tr>
               ))}
             </tbody>
@@ -361,7 +366,7 @@ export function OperationalContent() {
         </div>
 
         <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-          <span>Showing {pageRows.length} of {filteredRows.length}</span>
+          <span>Menampilkan {pageRows.length} dari {filteredRows.length}</span>
           <div className="flex items-center gap-1">
             {getPageItems(page, totalPages).map((item, index) =>
               item === "..." ? (
