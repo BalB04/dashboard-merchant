@@ -2,12 +2,14 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
   const router = useRouter();
   const [identifier, setIdentifier] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -54,10 +56,10 @@ export default function LoginPage() {
             </div>
             <div>
               <div className="text-2xl font-semibold tracking-tight text-slate-900">TelkomselMerchants</div>
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Merchant access</p>
+              <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Akses merchant</p>
             </div>
           </div>
-          <p className="text-sm text-slate-500">Use your merchant credential</p>
+          <p className="text-sm text-slate-500">Gunakan kredensial merchant Anda</p>
         </div>
 
         <div className="space-y-2">
@@ -67,22 +69,32 @@ export default function LoginPage() {
             onChange={(event) => setIdentifier(event.target.value)}
             className="soft-input w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none"
             autoComplete="username"
-            placeholder="enter email or username"
+            placeholder="masukkan email atau username"
             required
           />
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-semibold text-slate-600">Password</label>
-          <input
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            type="password"
-            className="soft-input w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none"
-            autoComplete="current-password"
-            placeholder="enter password"
-            required
-          />
+          <div className="relative">
+            <input
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              type={showPassword ? "text" : "password"}
+              className="soft-input w-full rounded-2xl border border-slate-300 px-4 py-3 pr-12 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none"
+              autoComplete="current-password"
+            placeholder="masukkan password"
+              required
+            />
+            <button
+              type="button"
+              aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+              onClick={() => setShowPassword((value) => !value)}
+              className="absolute right-3 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
 
         {error ? <div className="text-sm font-medium text-rose-600">{error}</div> : null}
@@ -92,7 +104,7 @@ export default function LoginPage() {
           disabled={loading}
           className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-slate-800 disabled:opacity-50"
         >
-          {loading ? "Signing in..." : "Sign in"}
+          {loading ? "Masuk..." : "Masuk"}
         </button>
       </form>
     </div>

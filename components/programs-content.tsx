@@ -190,7 +190,7 @@ export function ProgramsContent() {
 
   if (!data) {
     return (
-      <div className="px-6 py-6 text-sm text-slate-500">{loading ? "Loading..." : "No data"}</div>
+      <div className="px-6 py-6 text-sm text-slate-500">{loading ? "Memuat..." : "Tidak ada data"}</div>
     );
   }
 
@@ -233,12 +233,12 @@ export function ProgramsContent() {
               Programs & Promotion
             </h1>
             <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500">
-              Monitor active programs, live insights, and provider recommendations in one compact
-              surface.
+              Pantau active programs, insight langsung, dan rekomendasi provider dalam satu
+              tampilan ringkas.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
-            <ToplineStat label="Month" value={data.monthLabel} />
+            <ToplineStat label="Bulan" value={data.monthLabel} />
             <ToplineStat label="Active programs" value={String(activeProgramCount)} />
             <ToplineStat
               label="Unique redeemers"
@@ -257,14 +257,14 @@ export function ProgramsContent() {
               Active Programs
             </div>
             <div className="text-[12px] text-slate-500">
-              Active or nearest programs in the selected filter scope.
+              Program aktif atau terdekat dalam filter yang dipilih.
             </div>
           </div>
         </div>
 
         {carouselPrograms.length === 0 ? (
           <div className="programs-empty-state rounded-[28px] border border-dashed border-slate-300 bg-white/80 px-5 py-8 text-sm text-slate-500">
-            No program data for selected filters.
+            Tidak ada data program untuk filter yang dipilih.
           </div>
         ) : (
           <div className="space-y-2.5">
@@ -272,16 +272,16 @@ export function ProgramsContent() {
               <button
                 type="button"
                 className="programs-carousel-button inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
-                onClick={() => scrollCarousel(programCarouselRef, "prev")}
-                aria-label="Previous programs"
+                onClick={() => scrollCarousel("prev")}
+                aria-label="Program sebelumnya"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
                 type="button"
                 className="programs-carousel-button inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
-                onClick={() => scrollCarousel(programCarouselRef, "next")}
-                aria-label="Next programs"
+                onClick={() => scrollCarousel("next")}
+                aria-label="Program berikutnya"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -399,21 +399,21 @@ export function ProgramsContent() {
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <div className="text-[20px] font-semibold tracking-tight text-slate-900">
-              {selectedProgram?.merchantName ?? "Live Insights"}
+              {selectedProgram?.merchantName ?? "Insight Langsung"}
             </div>
             <div className="text-[11px] text-slate-500">
-              Selected-month performance for{" "}
-              {selectedProgram?.programName ?? "your featured program"}.
+              Performa bulan terpilih untuk{" "}
+              {selectedProgram?.programName ?? "program unggulan Anda"}.
             </div>
           </div>
         </div>
 
         {selectedProgram ? (
           <div className="mt-3 grid grid-cols-2 gap-2.5 md:grid-cols-4">
-            <InsightDetail label="Start period" value={selectedProgram.startPeriod} />
-            <InsightDetail label="End period" value={selectedProgram.endPeriod} />
-            <InsightDetail label="Keyword code" value={selectedProgram.keyword} />
-            <InsightDetail label="Recorded redeem" value={fmt(selectedProgram.redeem)} />
+            <InsightDetail label="Periode mulai" value={selectedProgram.startPeriod} />
+            <InsightDetail label="Periode akhir" value={selectedProgram.endPeriod} />
+            <InsightDetail label="Kode Keyword" value={selectedProgram.keyword} />
+            <InsightDetail label="Redeem tercatat" value={fmt(selectedProgram.redeem)} />
           </div>
         ) : null}
 
@@ -422,14 +422,14 @@ export function ProgramsContent() {
             icon={<Target className="h-4 w-4" />}
             label="Redeems"
             value={fmt(selectedProgram?.redeem ?? 0)}
-            delta="Successful transactions"
+            delta="Transaksi berhasil"
             tone="positive"
           />
           <InsightCard
             icon={<Eye className="h-4 w-4" />}
             label="Unique Redeemer"
             value={fmt(selectedProgram?.uniqueRedeemer ?? 0)}
-            delta="Unique MSISDN with success"
+            delta="MSISDN unik dengan status berhasil"
             tone="neutral"
           />
           <InsightCard
@@ -443,7 +443,7 @@ export function ProgramsContent() {
             icon={<Megaphone className="h-4 w-4" />}
             label="Failed"
             value={fmt(selectedProgram?.failed ?? 0)}
-            delta="Failed transactions"
+            delta="Transaksi gagal"
             tone={(selectedProgram?.failed ?? 0) > 0 ? "warning" : "neutral"}
           />
         </div>

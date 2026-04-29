@@ -17,7 +17,7 @@ const navItems = [
   { key: "overview", label: "Overview", mobileLabel: "Home", href: "/" },
   { key: "operational", label: "Operational", mobileLabel: "Analytics", href: "/operational" },
   { key: "programs", label: "Programs & Promotion", mobileLabel: "Programs", href: "/programs" },
-  { key: "feedback", label: "Feedback Center", mobileLabel: "Feedback", href: "/feedback" },
+  { key: "feedback", label: "Pusat Feedback", mobileLabel: "Feedback", href: "/feedback" },
 ] as const;
 
 const iconByKey = {
@@ -87,7 +87,7 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
             </div>
             <div>
               <div className="text-base font-bold tracking-tight text-slate-800">MerchantPoint</div>
-              <div className="text-xs font-medium text-slate-500">Analytics workspace</div>
+              <div className="text-xs font-medium text-slate-500">Ruang analitik</div>
             </div>
           </div>
           <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
@@ -99,7 +99,7 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
               onClick={handleLogout}
               disabled={loggingOut}
             >
-              {loggingOut ? "..." : "Log out"}
+              {loggingOut ? "..." : "Keluar"}
             </button>
           </div>
         </header>
@@ -117,7 +117,7 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
               <div className={`sidebar-fade ${collapsed ? "sidebar-fade-hidden" : "sidebar-fade-visible"}`}>
                 <div className="min-w-0">
                   <div className="text-base font-bold tracking-tight text-slate-900">MerchantPoint</div>
-                  <div className="sidebar-muted text-xs font-medium">Merchant control room</div>
+                  <div className="sidebar-muted text-xs font-medium">Ruang kontrol merchant</div>
                 </div>
               </div>
             </div>
@@ -128,7 +128,7 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
 
           <button
             type="button"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? "Buka sidebar" : "Tutup sidebar"}
             className={`sidebar-control mb-4 flex items-center rounded-[18px] border shadow-sm transition-[background-color,border-color,transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
               collapsed ? "justify-center px-0 py-3" : "justify-between px-3 py-2.5"
             }`}
@@ -138,7 +138,7 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
               {collapsed ? <PanelLeftOpen className="h-4.5 w-4.5" strokeWidth={2.2} /> : <PanelLeftClose className="h-4.5 w-4.5" strokeWidth={2.2} />}
             </span>
             <span className={`sidebar-fade pr-1 text-sm font-semibold ${collapsed ? "sidebar-fade-hidden" : "sidebar-fade-visible"}`}>
-              Collapse Sidebar
+              Tutup Sidebar
             </span>
           </button>
 
@@ -172,12 +172,12 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
                       </span>
                       <span className={`block truncate text-xs font-medium ${isActive ? "text-red-500" : "text-slate-500"}`}>
                         {item.key === "overview"
-                          ? "KPI and insight"
+                          ? "KPI dan insight"
                           : item.key === "operational"
-                            ? "Rules and execution"
+                            ? "Rules dan eksekusi"
                             : item.key === "programs"
-                              ? "Campaign monitoring"
-                              : "Merchant sentiment"}
+                              ? "Pemantauan campaign"
+                              : "Suara merchant"}
                       </span>
                     </div>
                   </div>
@@ -194,7 +194,7 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
             <>
               {collapsed ? null : (
                 <div className="sidebar-fade sidebar-fade-visible">
-                  <div className="mb-1 font-bold text-slate-800">Login Account</div>
+                  <div className="mb-1 font-bold text-slate-800">Akun Login</div>
                   <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 font-medium text-slate-700">
                     <span className="block truncate">{identity?.email ?? "-"}</span>
                   </div>
@@ -207,13 +207,13 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
                     onClick={handleLogout}
                     disabled={loggingOut}
                   >
-                    {loggingOut ? "Logging out..." : "Log out"}
+                    {loggingOut ? "Keluar..." : "Keluar"}
                   </button>
                 </div>
               )}
               <button
                 type="button"
-                aria-label="Log out"
+                aria-label="Keluar"
                 className={`flex items-center justify-center rounded-[18px] border border-red-100 bg-white text-red-700 shadow-sm transition-[background-color,border-color,transform,opacity,width,height] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-red-200 hover:bg-rose-50 ${
                   collapsed
                     ? "h-11 w-11 opacity-100 translate-y-0"

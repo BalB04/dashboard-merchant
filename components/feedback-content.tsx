@@ -182,9 +182,9 @@ export function FeedbackContent() {
   return (
     <div className="space-y-4 px-3 py-3 md:px-5">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="text-xl font-semibold text-slate-900">Feedback Center</div>
+        <div className="text-xl font-semibold text-slate-900">Pusat Feedback</div>
         <div className="text-sm text-slate-500">
-          Report issue, critic, and suggestion to provider
+          Sampaikan laporan, kritik, dan saran ke provider
         </div>
       </div>
 
@@ -197,7 +197,7 @@ export function FeedbackContent() {
               tab === "create" ? "bg-white text-slate-800" : "text-slate-500"
             }`}
           >
-            Create Feedback
+            Buat Feedback
           </button>
           <button
             type="button"
@@ -206,7 +206,7 @@ export function FeedbackContent() {
               tab === "history" ? "bg-white text-slate-800" : "text-slate-500"
             }`}
           >
-            History
+            Riwayat
           </button>
         </div>
 
@@ -264,7 +264,7 @@ function CreateFeedbackForm({
     <form className="grid gap-3" onSubmit={(event) => void onSubmit(event)}>
       <div className="grid gap-3 md:grid-cols-3">
         <FieldSelect
-          label="Type"
+          label="Tipe"
           value={form.type}
           options={feedbackTypes}
           onChange={(value) => onFieldChange("type", value as FeedbackType)}
@@ -276,17 +276,17 @@ function CreateFeedbackForm({
           onChange={(value) => onFieldChange("category", value)}
         />
         <FieldInput
-          label="Title"
-          placeholder="Short summary"
+          label="Judul"
+          placeholder="Ringkasan singkat"
           value={form.title}
           onChange={(value) => onFieldChange("title", value)}
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-semibold text-slate-600">Message</label>
+        <label className="mb-1 block text-xs font-semibold text-slate-600">Pesan</label>
         <textarea
           className="min-h-[120px] w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          placeholder="Describe issue, criticism, or suggestion..."
+          placeholder="Jelaskan laporan, kritik, atau saran..."
           value={form.message}
           onChange={(event) => onFieldChange("message", event.target.value)}
           disabled={isSubmitting}
@@ -294,7 +294,7 @@ function CreateFeedbackForm({
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-semibold text-slate-600">Attachment (optional)</label>
+        <label className="mb-1 block text-xs font-semibold text-slate-600">Lampiran (opsional)</label>
         <input
           type="file"
           className="block w-full text-sm"
@@ -303,7 +303,7 @@ function CreateFeedbackForm({
         />
         <div className="mt-1 text-xs text-slate-500">
           Maksimal 10MB. File yang di-upload akan bisa dilihat dari dashboard merchant dan admin.
-          {attachment ? ` Selected: ${attachment.name}` : ""}
+          {attachment ? ` Dipilih: ${attachment.name}` : ""}
         </div>
       </div>
       {submitError ? <div className="text-sm text-rose-600">{submitError}</div> : null}
@@ -314,7 +314,7 @@ function CreateFeedbackForm({
           disabled={isSubmitting}
           className="rounded-md bg-[#0E1A35] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSubmitting ? "Submitting..." : "Submit"}
+          {isSubmitting ? "Mengirim..." : "Kirim"}
         </button>
       </div>
     </form>
@@ -337,7 +337,7 @@ function FeedbackHistory({
   onCancel: (id: string) => Promise<void>;
 }) {
   if (loading) {
-    return <div className="py-6 text-sm text-slate-500">Loading feedback history...</div>;
+    return <div className="py-6 text-sm text-slate-500">Memuat riwayat feedback...</div>;
   }
 
   if (error) {
@@ -349,7 +349,7 @@ function FeedbackHistory({
           onClick={() => void onRetry()}
           className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
         >
-          Retry
+          Coba lagi
         </button>
       </div>
     );
@@ -371,7 +371,7 @@ function FeedbackHistory({
             <div className="text-xs text-slate-500">{formatDate(item.createdAt)}</div>
             <div className="mt-2 text-sm font-semibold text-slate-800">{item.title}</div>
             <div className="mt-1 text-xs text-slate-500">
-              Type: {item.type} | Category: {item.category}
+              Tipe: {item.type} | Category: {item.category}
             </div>
             <div className="mt-2 text-xs text-slate-600">{item.message}</div>
             {item.attachment ? (
@@ -382,12 +382,12 @@ function FeedbackHistory({
                   rel="noreferrer"
                   className="font-medium text-blue-600 underline"
                 >
-                  {item.attachment.fileName || "View attachment"}
+                  {item.attachment.fileName || "Lihat lampiran"}
                 </a>
               </div>
             ) : null}
             <div className="mt-2 text-xs text-slate-600">
-              {item.reply ? `Provider reply: ${item.reply}` : "Belum ada balasan provider."}
+              {item.reply ? `Balasan provider: ${item.reply}` : "Belum ada balasan provider."}
             </div>
             {item.status === "open" || item.status === "in_progress" ? (
               <div className="mt-3">
@@ -397,7 +397,7 @@ function FeedbackHistory({
                   disabled={cancelingId === item.id}
                   className="rounded-md border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 disabled:opacity-60"
                 >
-                  {cancelingId === item.id ? "Canceling..." : "Cancel Ticket"}
+                  {cancelingId === item.id ? "Membatalkan..." : "Batalkan Tiket"}
                 </button>
               </div>
             ) : null}
@@ -410,14 +410,14 @@ function FeedbackHistory({
           <thead className="bg-[#0E1A35] text-white">
             <tr>
               <th className="px-3 py-2 text-left">Ticket</th>
-              <th className="px-3 py-2 text-left">Type</th>
+              <th className="px-3 py-2 text-left">Tipe</th>
               <th className="px-3 py-2 text-left">Category</th>
-              <th className="px-3 py-2 text-left">Title</th>
-              <th className="px-3 py-2 text-left">Message</th>
-              <th className="px-3 py-2 text-left">Attachment</th>
+              <th className="px-3 py-2 text-left">Judul</th>
+              <th className="px-3 py-2 text-left">Pesan</th>
+              <th className="px-3 py-2 text-left">Lampiran</th>
               <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left">Created</th>
-              <th className="px-3 py-2 text-left">Provider Reply</th>
+              <th className="px-3 py-2 text-left">Dibuat</th>
+              <th className="px-3 py-2 text-left">Balasan Provider</th>
               <th className="px-3 py-2 text-left">Action</th>
             </tr>
           </thead>
