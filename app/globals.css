@@ -67,8 +67,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-plus-jakarta-sans);
-  --font-mono: var(--font-ibm-plex-mono);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 html,
@@ -80,7 +80,7 @@ body {
 body {
   min-height: 100vh;
   color: var(--foreground);
-  font-family: var(--font-plus-jakarta-sans), sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
   font-weight: 500;
   line-height: 1.6;
   text-rendering: optimizeLegibility;
@@ -355,11 +355,6 @@ body {
   transform: translateX(0);
   max-width: 240px;
   transition-delay: 0ms, 0ms, 0ms;
-}
-
-.section-heading {
-  letter-spacing: -0.03em;
-  font-weight: 700;
 }
 
 .pill-accent {

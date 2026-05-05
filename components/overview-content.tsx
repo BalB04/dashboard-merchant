@@ -181,11 +181,12 @@ export function OverviewContent() {
     });
   }, [data?.dailyTrend, data?.month]);
   const keywordCompositionData = React.useMemo(() => {
-    const sums = new Map<string, number>();
+    const counts = new Map<string, number>();
     for (const row of data?.transactions ?? []) {
-      sums.set(row.keyword, (sums.get(row.keyword) ?? 0) + row.redeemPointTotal);
+      if (row.status.toLowerCase() !== "success") continue;
+      counts.set(row.keyword, (counts.get(row.keyword) ?? 0) + 1);
     }
-    return Array.from(sums.entries())
+    return Array.from(counts.entries())
       .map(([label, value]) => ({ label, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
@@ -219,47 +220,49 @@ export function OverviewContent() {
 
   return (
     <div className="space-y-4 px-3 py-3 md:px-5">
-      <div className="content-fade-in my-6 flex flex-col gap-4 xl:my-8 xl:flex-row xl:items-end xl:justify-between">
-        <div className="max-w-[720px]">
-          <div className="text-sm font-medium text-slate-500">Ringkasan bulan</div>
-          <div className="section-heading mt-2 text-[1.85rem] font-semibold leading-[1.08] text-slate-900 sm:text-[2rem] md:text-[2.4rem]">
+      <div className="content-fade-in my-4 flex flex-col gap-4 xl:my-5 xl:flex-row xl:items-center xl:justify-between">
+        <div className="max-w-[760px]">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+            Ringkasan bulan
+          </div>
+          <div className="mt-1 text-[1.85rem] font-bold leading-tight text-slate-900 sm:text-[2.15rem] md:text-[2.35rem]">
             {merchantTitle}.
           </div>
           {merchantSecondaryMeta ? (
-            <div className="mt-2 text-[13px] font-medium tracking-[0.02em] text-slate-400 sm:text-sm">
+            <div className="mt-1 text-sm font-medium leading-6 text-slate-600">
               {merchantSecondaryMeta}
             </div>
           ) : null}
-          <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] leading-6 text-slate-600 sm:gap-x-3 sm:gap-y-1.5 sm:text-[15px] sm:leading-7">
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-6 text-slate-500">
             {keywordText ? (
-              <span className="inline-flex max-w-full items-center font-mono text-[12.5px] tracking-[0.04em] text-slate-500 sm:text-[14px]">
+              <span className="inline-flex max-w-full items-center font-medium text-slate-500">
                 {keywordText}
               </span>
             ) : null}
           </div>
         </div>
-        <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[520px]">
-          <div className="glass-panel rounded-[20px] border border-slate-200 p-4 shadow-sm">
-            <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+        <div className="grid w-full gap-3 sm:grid-cols-3 xl:w-auto xl:min-w-[560px]">
+          <div className="glass-panel min-h-24 rounded-2xl border border-slate-200 px-5 py-4 shadow-sm">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
               Bulan ini
             </div>
-            <div className="mt-2 text-[1.75rem] font-semibold leading-none text-slate-900">
+            <div className="mt-2 text-[1.35rem] font-bold leading-none text-slate-900">
               {data.monthLabel}
             </div>
           </div>
-          <div className="glass-panel rounded-[20px] border border-slate-200 p-4 shadow-sm">
-            <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+          <div className="glass-panel min-h-24 rounded-2xl border border-slate-200 px-5 py-4 shadow-sm">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
               Transaksi
             </div>
-            <div className="mt-2 text-[1.75rem] font-semibold leading-none text-slate-900">
+            <div className="mt-2 text-[1.35rem] font-bold leading-none text-slate-900">
               {fmt(data.transactions.length)}
             </div>
           </div>
-          <div className="glass-panel rounded-[20px] border border-slate-200 p-4 shadow-sm">
-            <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+          <div className="glass-panel min-h-24 rounded-2xl border border-slate-200 px-5 py-4 shadow-sm">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
               Keyword Aktif
             </div>
-            <div className="mt-2 text-[1.75rem] font-semibold leading-none text-slate-900">
+            <div className="mt-2 text-[1.35rem] font-bold leading-none text-slate-900">
               {fmt(data.keywordRules.filter((row) => row.status === "active").length)}
             </div>
           </div>
@@ -286,10 +289,10 @@ export function OverviewContent() {
             >
               <div className="mb-3 flex items-start justify-between gap-2">
                 <div>
-                  <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">
                     {item.label}
                   </div>
-                  <div className="mt-3 text-[34px] font-bold leading-none text-slate-900">
+                  <div className="mt-3 text-[2rem] font-bold tracking-[-0.05em] leading-none text-slate-900 sm:text-[2.15rem]">
                     {fmt(item.value)}
                   </div>
                 </div>
@@ -301,7 +304,7 @@ export function OverviewContent() {
                 </div>
               </div>
               <MiniLineChart data={lineData} />
-              <div className="mt-3 flex items-center justify-between text-base font-semibold text-slate-700">
+              <div className="mt-3 flex items-center justify-between text-sm font-semibold text-slate-700 sm:text-base">
                 <span>{data.monthLabel}</span>
                 <span>{fmt(item.value)}</span>
               </div>
@@ -338,6 +341,7 @@ export function OverviewContent() {
               <span>Keyword Composition</span>
             </div>
           }
+          subtitle="Berdasarkan total transaksi berhasil"
         />
       </div>
 

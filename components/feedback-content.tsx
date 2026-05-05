@@ -182,18 +182,18 @@ export function FeedbackContent() {
   return (
     <div className="space-y-4 px-3 py-3 md:px-5">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="text-xl font-semibold text-slate-900">Pusat Feedback</div>
-        <div className="text-sm text-slate-500">
+        <div className="text-[1.35rem] font-bold tracking-[-0.035em] leading-tight text-slate-900">Pusat Center</div>
+        <div className="mt-1 text-sm font-medium leading-6 text-slate-500">
           Sampaikan laporan, kritik, dan saran ke provider
         </div>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-3 flex w-fit items-center gap-1 rounded-md bg-slate-100 p-1 text-xs">
+        <div className="mb-3 flex w-fit items-center gap-1 rounded-full bg-slate-100 p-1 text-xs">
           <button
             type="button"
             onClick={() => setTab("create")}
-            className={`rounded px-3 py-1.5 font-semibold ${
+            className={`rounded-full px-3 py-1.5 font-semibold transition ${
               tab === "create" ? "bg-white text-slate-800" : "text-slate-500"
             }`}
           >
@@ -202,7 +202,7 @@ export function FeedbackContent() {
           <button
             type="button"
             onClick={() => setTab("history")}
-            className={`rounded px-3 py-1.5 font-semibold ${
+            className={`rounded-full px-3 py-1.5 font-semibold transition ${
               tab === "history" ? "bg-white text-slate-800" : "text-slate-500"
             }`}
           >

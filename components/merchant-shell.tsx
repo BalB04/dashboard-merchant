@@ -17,7 +17,7 @@ const navItems = [
   { key: "overview", label: "Overview", mobileLabel: "Home", href: "/" },
   { key: "operational", label: "Operational", mobileLabel: "Analytics", href: "/operational" },
   { key: "programs", label: "Programs & Promotion", mobileLabel: "Programs", href: "/programs" },
-  { key: "feedback", label: "Pusat Feedback", mobileLabel: "Feedback", href: "/feedback" },
+  { key: "feedback", label: "Feedback Center", mobileLabel: "Feedback", href: "/feedback" },
 ] as const;
 
 const iconByKey = {
@@ -79,7 +79,7 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
 
   return (
     <div className="dashboard-shell min-h-screen bg-[#F4F6FA] text-slate-900">
-      <div className="mx-auto flex max-w-[1800px] gap-5 px-3 pb-4 pt-3 md:px-4">
+      <div className="flex min-h-screen w-full flex-col pb-4 pt-0 md:flex-row md:items-stretch md:pt-0">
         <header className="glass-panel fixed left-3 right-3 top-3 z-40 flex items-center justify-between rounded-[24px] border border-slate-200 px-4 py-3 md:hidden">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 via-red-400 to-orange-300 text-white shadow-sm">
@@ -105,7 +105,7 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
         </header>
 
         <aside
-          className={`sidebar-panel sidebar-motion sticky top-3 hidden h-[calc(100vh-1.5rem)] rounded-[24px] border py-4 md:flex md:flex-col ${
+          className={`sidebar-panel sidebar-motion hidden self-start rounded-r-[24px] rounded-l-none border-l-0 py-4 md:sticky md:top-0 md:flex md:h-screen md:flex-col ${
             collapsed ? "w-[92px] px-2.5" : "w-[272px] px-3"
           }`}
         >
@@ -117,7 +117,7 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
               <div className={`sidebar-fade ${collapsed ? "sidebar-fade-hidden" : "sidebar-fade-visible"}`}>
                 <div className="min-w-0">
                   <div className="text-base font-bold tracking-tight text-slate-900">MerchantPoint</div>
-                  <div className="sidebar-muted text-xs font-medium">Ruang kontrol merchant</div>
+                  <div className="sidebar-muted text-xs font-medium">Merchant Dashboard</div>
                 </div>
               </div>
             </div>
@@ -176,8 +176,8 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
                           : item.key === "operational"
                             ? "Rules dan eksekusi"
                             : item.key === "programs"
-                              ? "Pemantauan campaign"
-                              : "Suara merchant"}
+                              ? ""
+                              : ""}
                       </span>
                     </div>
                   </div>
@@ -197,9 +197,6 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
                   <div className="mb-1 font-bold text-slate-800">Akun Login</div>
                   <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 font-medium text-slate-700">
                     <span className="block truncate">{identity?.email ?? "-"}</span>
-                  </div>
-                  <div className="mt-2 text-xs font-medium text-slate-500">
-                    Merchant key: <span className="font-mono">{identity?.merchantKey?.slice(0, 8) ?? "-"}</span>
                   </div>
                   <button
                     type="button"
@@ -227,7 +224,7 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
             </>
           </div>
         </aside>
-        <section className="min-w-0 flex-1 px-0 py-3 pt-18 pb-24 md:pt-0 md:pb-3">{children}</section>
+        <section className="min-w-0 flex-1 px-3 pt-18 pb-24 md:px-4 md:pt-0 md:pb-3">{children}</section>
       </div>
 
       <nav

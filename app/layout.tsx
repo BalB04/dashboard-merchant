@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const themeInitScript = `
@@ -17,14 +17,14 @@ const themeInitScript = `
 })();
 `;
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+const geistSans = Geist({
   subsets: ["latin"],
-  variable: "--font-plus-jakarta-sans",
+  variable: "--font-geist-sans",
 });
 
-const ibmPlexMono = IBM_Plex_Mono({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
-  variable: "--font-ibm-plex-mono",
+  variable: "--font-geist-mono",
   weight: ["400", "500"],
 });
 
@@ -39,7 +39,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={`${plusJakartaSans.variable} ${ibmPlexMono.variable} antialiased`}>{children}</body>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
     </html>
   );
 }

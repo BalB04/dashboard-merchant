@@ -55,15 +55,17 @@ export default function LoginPage() {
               T
             </div>
             <div>
-              <div className="text-2xl font-semibold tracking-tight text-slate-900">TelkomselMerchants</div>
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Akses merchant</p>
+              <div className="text-[1.4rem] font-bold tracking-[-0.04em] leading-tight text-slate-900">
+                TelkomselMerchants
+              </div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">Akses merchant</p>
             </div>
           </div>
-          <p className="text-sm text-slate-500">Gunakan kredensial merchant Anda</p>
+          <p className="text-sm font-medium leading-6 text-slate-500">Gunakan kredensial merchant Anda</p>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-600">Email / Username</label>
+          <label className="text-[13px] font-semibold tracking-[0.01em] text-slate-600">Email / Username</label>
           <input
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
@@ -75,7 +77,7 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-600">Password</label>
+          <label className="text-[13px] font-semibold tracking-[0.01em] text-slate-600">Password</label>
           <div className="relative">
             <input
               value={password}

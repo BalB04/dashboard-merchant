@@ -8,7 +8,6 @@ import {
   ChevronRight,
   Eye,
   Megaphone,
-  Sparkles,
   Target,
   TrendingUp,
 } from "lucide-react";
@@ -222,22 +221,17 @@ export function ProgramsContent() {
 
   return (
     <div className="space-y-5 px-4 py-4 md:px-6">
-      <section className="programs-hero overflow-hidden rounded-[28px] border border-white/50 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.96),_rgba(244,246,250,0.92)_40%,_rgba(233,238,245,0.96)_100%)] p-4 shadow-[0_16px_42px_rgba(15,23,42,0.06)] md:p-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="programs-hero-chip inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+      <section className="glass-panel overflow-hidden rounded-[20px] border border-slate-200 px-4 py-4 shadow-sm md:px-5 md:py-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-[760px]">
+            <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
               Programs & Promotion
             </div>
-            <h1 className="mt-3 max-w-2xl text-[28px] font-semibold tracking-tight text-slate-900 md:text-[2rem]">
+            <h1 className="mt-1 mb-3 text-[1.85rem] font-bold leading-tight text-slate-900 sm:text-[2.15rem] md:text-[2.35rem]">
               Programs & Promotion
             </h1>
-            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500">
-              Pantau active programs, insight langsung, dan rekomendasi provider dalam satu
-              tampilan ringkas.
-            </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[560px]">
             <ToplineStat label="Bulan" value={data.monthLabel} />
             <ToplineStat label="Active programs" value={String(activeProgramCount)} />
             <ToplineStat
@@ -253,10 +247,10 @@ export function ProgramsContent() {
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="text-[20px] font-semibold tracking-tight text-slate-900">
+            <div className="text-[1.15rem] font-bold tracking-[-0.03em] text-slate-900">
               Active Programs
             </div>
-            <div className="text-[12px] text-slate-500">
+            <div className="text-[12px] font-medium leading-5 text-slate-500">
               Program aktif atau terdekat dalam filter yang dipilih.
             </div>
           </div>
@@ -272,7 +266,7 @@ export function ProgramsContent() {
               <button
                 type="button"
                 className="programs-carousel-button inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
-                onClick={() => scrollCarousel("prev")}
+                onClick={() => scrollCarousel(programCarouselRef, "prev")}
                 aria-label="Program sebelumnya"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -280,7 +274,7 @@ export function ProgramsContent() {
               <button
                 type="button"
                 className="programs-carousel-button inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
-                onClick={() => scrollCarousel("next")}
+                onClick={() => scrollCarousel(programCarouselRef, "next")}
                 aria-label="Program berikutnya"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -398,10 +392,10 @@ export function ProgramsContent() {
       <section className="programs-insight-panel rounded-[24px] border border-white/50 bg-[linear-gradient(180deg,#eef3f8_0%,#f8fafc_100%)] p-3.5 shadow-sm md:p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            <div className="text-[20px] font-semibold tracking-tight text-slate-900">
+            <div className="text-[1.15rem] font-bold tracking-[-0.03em] text-slate-900">
               {selectedProgram?.merchantName ?? "Insight Langsung"}
             </div>
-            <div className="text-[11px] text-slate-500">
+            <div className="text-[11px] font-medium leading-5 text-slate-500">
               Performa bulan terpilih untuk{" "}
               {selectedProgram?.programName ?? "program unggulan Anda"}.
             </div>
@@ -452,10 +446,10 @@ export function ProgramsContent() {
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="text-[24px] font-semibold tracking-tight text-slate-900">
+            <div className="text-[1.35rem] font-bold tracking-[-0.035em] leading-tight text-slate-900">
               Promotions
             </div>
-            <div className="text-sm text-slate-500"></div>
+            <div className="text-sm font-medium leading-6 text-slate-500"></div>
           </div>
           <div className="flex justify-end gap-2">
             <button
@@ -488,7 +482,7 @@ export function ProgramsContent() {
             return (
               <article
                 key={banner.id}
-                className="group relative min-w-[320px] snap-start overflow-hidden rounded-[22px] bg-slate-950 p-4 text-white shadow-[0_14px_28px_rgba(15,23,42,0.15)] md:min-w-[360px] xl:min-w-[420px]"
+                className="group relative min-w-[380px] snap-start overflow-hidden rounded-[22px] bg-slate-950 p-4 text-white shadow-[0_14px_28px_rgba(15,23,42,0.15)] md:min-h-[240px] md:min-w-[500px] xl:min-w-[620px]"
               >
                 {image ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -503,16 +497,15 @@ export function ProgramsContent() {
                 />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.14),transparent_35%)]" />
 
-                <div className="relative min-h-[104px]">
-                  <div className="w-fit max-w-full rounded-[22px] border border-white/18 bg-black/34 p-3.5 backdrop-blur-md">
+                <div className="absolute bottom-4 right-4 w-full max-w-[86%] rounded-[22px] border border-white/18 bg-black/34 p-3.5 backdrop-blur-md md:max-w-[82%]">
                     {/* <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/82">
                       {index === 0 ? "Placement booster" : "Smart engine"}
                     </div> */}
-                    <h3 className="mt-3 max-w-[18ch] text-[22px] font-semibold leading-[1.05] tracking-tight">
+                    <h3 className="mt-3 max-w-[22ch] text-[22px] font-semibold leading-[1.05] tracking-tight">
                       {banner.title}
                     </h3>
                     <p
-                      className="mt-2 max-w-md overflow-hidden text-[11px] leading-5 text-white/92"
+                      className="mt-2 max-w-lg overflow-hidden text-[11px] leading-5 text-white/92"
                       style={{
                         display: "-webkit-box",
                         WebkitBoxOrient: "vertical",
@@ -530,7 +523,6 @@ export function ProgramsContent() {
                       {banner.cta || "Launch promotion"}
                     </button>
                   </div>
-                </div>
               </article>
             );
           })}
@@ -571,14 +563,6 @@ export function ProgramsContent() {
                 </h3>
                 <p className="mt-3 text-sm leading-6 text-slate-600">{selectedBanner.subtitle}</p>
               </div>
-              <button
-                type="button"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
-                onClick={() => setSelectedBanner(null)}
-                aria-label="Close promotion popup"
-              >
-                <span className="text-lg leading-none">×</span>
-              </button>
             </div>
 
             <div className="mt-5 flex justify-end">
@@ -599,11 +583,11 @@ export function ProgramsContent() {
 
 function ToplineStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="programs-topline-stat rounded-[18px] border border-white/70 bg-white/78 px-3.5 py-2.5 shadow-sm backdrop-blur-sm">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+    <div className="glass-panel rounded-[16px] border border-slate-200 px-5 py-4 shadow-sm">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
         {label}
       </div>
-      <div className="mt-1.5 text-[15px] font-semibold text-slate-900">{value}</div>
+      <div className="mt-2 text-[1.25rem] font-bold leading-none text-slate-900">{value}</div>
     </div>
   );
 }

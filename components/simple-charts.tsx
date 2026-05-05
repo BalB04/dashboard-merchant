@@ -34,6 +34,29 @@ const tooltipStyle = {
   boxShadow: "0 14px 32px rgba(2, 6, 23, 0.24)",
 };
 
+function KeywordPieTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload?: { label?: string; value?: number } }>;
+}) {
+  if (!active || !payload?.length) return null;
+  const item = payload[0]?.payload;
+  if (!item) return null;
+
+  return (
+    <div style={tooltipStyle} className="min-w-[180px] px-3 py-2">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+        Keyword
+      </div>
+      <div className="mt-1 text-sm font-semibold text-slate-900">{item.label ?? "-"}</div>
+      <div className="mt-2 text-xs text-slate-500">Transaksi berhasil</div>
+      <div className="text-base font-bold text-slate-900">{numberFmt.format(item.value ?? 0)}</div>
+    </div>
+  );
+}
+
 export function MiniLineChart({
   data,
   stroke = "#ff8a00",
@@ -182,9 +205,11 @@ export function MonthlyBarChart({
 export function KeywordPieChart({
   data,
   title,
+  subtitle,
 }: {
   data: SeriesPoint[];
   title?: React.ReactNode;
+  subtitle?: React.ReactNode;
 }) {
   const safeRaw = data.length ? data : [{ label: "No Keyword", value: 1 }];
   const safe = safeRaw.slice(0, 6).map((item) => ({ ...item, value: Math.max(0, item.value) }));
@@ -194,38 +219,43 @@ export function KeywordPieChart({
   return (
     <div className="glass-panel content-fade-in rounded-[28px] border border-slate-200 p-5 shadow-sm">
       <div className="mb-2 text-sm font-semibold text-slate-900">{title ?? "Keyword Composition"}</div>
-      <div className="h-[210px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Tooltip
-              contentStyle={tooltipStyle}
-              formatter={(value: number) => [numberFmt.format(value), "Share"]}
-            />
-            <Pie
-              data={safe}
-              dataKey="value"
-              nameKey="label"
-              cx="40%"
-              cy="50%"
-              innerRadius={40}
-              outerRadius={74}
-              paddingAngle={1.2}
-              labelLine={false}
-              label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}
-            >
-              {safe.map((entry, colorIndex) => (
-                <Cell key={entry.label} fill={colors[colorIndex % colors.length]} />
-              ))}
-            </Pie>
-            <Legend
-              layout="vertical"
-              align="right"
-              verticalAlign="middle"
-              wrapperStyle={{ fontSize: 11, right: 0 }}
-              formatter={(value) => <span className="text-slate-700">{value}</span>}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+      {subtitle ? <div className="mb-4 text-xs font-medium leading-5 text-slate-500">{subtitle}</div> : null}
+      <div className="grid min-h-[260px] items-center gap-4 lg:grid-cols-[minmax(0,1.2fr)_180px]">
+        <div className="h-[240px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Tooltip content={<KeywordPieTooltip />} />
+              <Pie
+                data={safe}
+                dataKey="value"
+                nameKey="label"
+                cx="50%"
+                cy="50%"
+                innerRadius={48}
+                outerRadius={94}
+                paddingAngle={1.2}
+                labelLine={false}
+                label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}
+              >
+                {safe.map((entry, colorIndex) => (
+                  <Cell key={entry.label} fill={colors[colorIndex % colors.length]} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="flex flex-col justify-center gap-2 text-[11px]">
+          {safe.map((entry, colorIndex) => (
+            <div key={entry.label} className="flex items-center gap-2 text-slate-700">
+              <span
+                className="h-4 w-4 rounded-full"
+                style={{ backgroundColor: colors[colorIndex % colors.length] }}
+              />
+              <span className="truncate">{entry.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
