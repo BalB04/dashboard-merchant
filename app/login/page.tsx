@@ -3,10 +3,14 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+
+import { useGlobalLoading } from "@/components/global-loading-provider";
+
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { startPending, stopPending } = useGlobalLoading();
   const [identifier, setIdentifier] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
@@ -19,6 +23,7 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
+      startPending();
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -35,6 +40,7 @@ export default function LoginPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
+      stopPending();
       setLoading(false);
     }
   };

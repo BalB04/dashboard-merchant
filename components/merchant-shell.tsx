@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { BarChart3, LogOut, Megaphone, MessageCircle, PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 
 import { useDashboardFilters } from "@/components/dashboard-filter-provider";
+import { useGlobalLoading } from "@/components/global-loading-provider";
+import { PageContentLoadingOverlay } from "@/components/page-top-loader";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 type MerchantShellProps = {
@@ -29,6 +31,7 @@ const iconByKey = {
 
 export function MerchantShell({ active, children }: MerchantShellProps) {
   const router = useRouter();
+  const { startPending, stopPending } = useGlobalLoading();
   const { identity } = useDashboardFilters();
   const [collapsed, setCollapsed] = React.useState(false);
   const [loggingOut, setLoggingOut] = React.useState(false);
@@ -37,6 +40,7 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
   const hideLabelsTimeout = React.useRef<number | null>(null);
 
   const handleLogout = async () => {
+    startPending();
     try {
       setLoggingOut(true);
       await fetch("/api/auth/logout", { method: "POST" });
@@ -44,6 +48,7 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
       router.replace("/login");
       router.refresh();
       setLoggingOut(false);
+      stopPending();
     }
   };
 
@@ -224,7 +229,10 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
             </>
           </div>
         </aside>
-        <section className="min-w-0 flex-1 px-3 pt-18 pb-24 md:px-4 md:pt-0 md:pb-3">{children}</section>
+        <section className="relative min-w-0 flex-1 px-3 pt-18 pb-24 md:px-4 md:pt-0 md:pb-3">
+          <PageContentLoadingOverlay />
+          {children}
+        </section>
       </div>
 
       <nav

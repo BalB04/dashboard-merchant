@@ -14,6 +14,7 @@ import {
 
 import { DashboardFilterControls } from "@/components/dashboard-filter-controls";
 import { useDashboardFilters } from "@/components/dashboard-filter-provider";
+import { useBindGlobalLoading } from "@/components/global-loading-provider";
 import { buildFilterSearchParams } from "@/lib/dashboard-filters";
 import diningImage from "../images/dining.jpg";
 import entertainmentImage from "../images/entertainment.jpg";
@@ -131,6 +132,8 @@ export function ProgramsContent() {
   const programCarouselRef = React.useRef<HTMLDivElement | null>(null);
   const promotionCarouselRef = React.useRef<HTMLDivElement | null>(null);
 
+  useBindGlobalLoading(loading);
+
   React.useEffect(() => {
     if (!selectedBanner) return;
 
@@ -188,9 +191,8 @@ export function ProgramsContent() {
   }, [initialized, monthsKey, categoriesKey, branchesKey, applied]);
 
   if (!data) {
-    return (
-      <div className="px-6 py-6 text-sm text-slate-500">{loading ? "Memuat..." : "Tidak ada data"}</div>
-    );
+    if (loading) return null;
+    return <div className="px-6 py-6 text-sm text-slate-500">Tidak ada data</div>;
   }
 
   const programs = data.programs;

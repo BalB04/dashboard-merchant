@@ -5,6 +5,7 @@ import * as React from "react";
 
 import { DashboardFilterControls } from "@/components/dashboard-filter-controls";
 import { useDashboardFilters } from "@/components/dashboard-filter-provider";
+import { useBindGlobalLoading } from "@/components/global-loading-provider";
 import { KeywordPieChart, MiniLineChart, MonthlyBarChart } from "@/components/simple-charts";
 import { Activity, ListChecks, PieChart, Receipt, Search } from "lucide-react";
 import { buildFilterSearchParams } from "@/lib/dashboard-filters";
@@ -105,6 +106,8 @@ export function OverviewContent() {
   const [search, setSearch] = React.useState("");
   const [page, setPage] = React.useState(1);
 
+  useBindGlobalLoading(loading);
+
   React.useEffect(() => {
     let active = true;
     const controller = new AbortController();
@@ -193,9 +196,8 @@ export function OverviewContent() {
   }, [data?.transactions]);
 
   if (!data) {
-    return (
-      <div className="px-6 py-6 text-sm text-slate-500">{loading ? "Memuat..." : "Tidak ada data"}</div>
-    );
+    if (loading) return null;
+    return <div className="px-6 py-6 text-sm text-slate-500">Tidak ada data</div>;
   }
 
   const kpis = [

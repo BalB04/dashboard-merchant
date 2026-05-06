@@ -3,6 +3,8 @@
 import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { useBindGlobalLoading } from "@/components/global-loading-provider";
+
 type FilterOption = {
   value: string;
   label: string;
@@ -106,6 +108,8 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
   });
   const appliedMonthsKey = React.useMemo(() => applied.months.join(","), [applied.months]);
 
+  useBindGlobalLoading(loading);
+
   React.useEffect(() => {
     let active = true;
 
@@ -205,7 +209,7 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
     return () => {
       active = false;
     };
-  }, [initialized, appliedMonthsKey, applied.months]);
+  }, [initialized, applied.branches, applied.categories, applied.months, appliedMonthsKey]);
 
   React.useEffect(() => {
     if (!initialized) return;

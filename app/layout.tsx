@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+
+import { GlobalLoadingProvider } from "@/components/global-loading-provider";
+import { PageTopLoader } from "@/components/page-top-loader";
+
 import "./globals.css";
 
 const themeInitScript = `
@@ -39,7 +43,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <GlobalLoadingProvider>
+          <PageTopLoader />
+          {children}
+        </GlobalLoadingProvider>
+      </body>
     </html>
   );
 }

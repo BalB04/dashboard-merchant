@@ -2,6 +2,8 @@
 
 import * as React from "react";
 
+import { useBindGlobalLoading } from "@/components/global-loading-provider";
+
 type FeedbackType = "report" | "critic" | "suggestion";
 type FeedbackStatus = "open" | "in_progress" | "resolved";
 type FeedbackAttachment = {
@@ -75,6 +77,8 @@ export function FeedbackContent() {
     message: "",
   });
   const [attachment, setAttachment] = React.useState<File | null>(null);
+
+  useBindGlobalLoading(loading || isSubmitting || cancelingId !== null);
 
   const loadFeedback = React.useCallback(async () => {
     setLoading(true);
@@ -337,7 +341,7 @@ function FeedbackHistory({
   onCancel: (id: string) => Promise<void>;
 }) {
   if (loading) {
-    return <div className="py-6 text-sm text-slate-500">Memuat riwayat feedback...</div>;
+    return null;
   }
 
   if (error) {
