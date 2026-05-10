@@ -55,6 +55,9 @@ const toNumber = (value: unknown) => Number(value ?? 0);
 
 const unique = (values: string[]) => Array.from(new Set(values));
 
+const latestMonthValue = (months: string[]) =>
+  [...months].sort().at(-1) ?? "";
+
 const toUrlSearchParams = (input: SearchParamsInput) => {
   const params = new URLSearchParams();
 
@@ -235,7 +238,7 @@ export async function getDashboardBootstrap(searchParamsInput: SearchParamsInput
         filterOptions.keywords.some((option) => option.value === value),
       ),
     },
-    latestMonth: requested.months.at(-1) ?? "",
+    latestMonth: latestMonthValue(requested.months),
   };
 
   return { session, bootstrap };
@@ -245,7 +248,7 @@ export async function getOverviewData(
   session: MerchantSession,
   selection: DashboardFilterSelection,
 ): Promise<OverviewResponse> {
-  const latestMonth = selection.months[selection.months.length - 1];
+  const latestMonth = latestMonthValue(selection.months);
   const latestStart = parseMonth(latestMonth);
   const latestEnd = addMonths(latestStart, 1);
   const previousMonth = formatMonth(addMonths(latestStart, -1));
@@ -369,7 +372,7 @@ export async function getOverviewData(
         group by date_trunc('month', ft.transaction_at)
         order by date_trunc('month', ft.transaction_at)
       `,
-      [session.merchantKey, session.scopeType, addMonths(latestStart, -11), latestEnd, selection.categories, selection.branches, selection.keywords],
+      [session.merchantKey, session.scopeType, addMonths(latestStart, -5), latestEnd, selection.categories, selection.branches, selection.keywords],
     ),
     query<{
       keyword: string;
@@ -450,6 +453,19 @@ export async function getOverviewData(
     end_period: null,
     point_redeem: null,
   };
+  const monthlyTrendMap = new Map(monthlyTrend.rows.map((row) => [row.month, row]));
+  const filledMonthlyTrend = Array.from({ length: 6 }, (_, index) => {
+    const monthDate = addMonths(latestStart, index - 5);
+    const month = formatMonth(monthDate);
+    const row = monthlyTrendMap.get(month);
+
+    return {
+      month,
+      redeem: toNumber(row?.redeem),
+      uniqueRedeemer: toNumber(row?.unique_redeemer),
+      burningPoin: toNumber(row?.burning_poin),
+    };
+  });
 
   return {
     month: latestMonth,
@@ -482,12 +498,7 @@ export async function getOverviewData(
       uniqueRedeemer: toNumber(row.unique_redeemer),
       burningPoin: toNumber(row.burning_poin),
     })),
-    monthlyTrend: monthlyTrend.rows.map((row) => ({
-      month: row.month,
-      redeem: toNumber(row.redeem),
-      uniqueRedeemer: toNumber(row.unique_redeemer),
-      burningPoin: toNumber(row.burning_poin),
-    })),
+    monthlyTrend: filledMonthlyTrend,
     keywordRules: ruleStatus.rows.map((row) => ({
       keyword: row.keyword,
       startPeriod: row.start_period,
@@ -514,7 +525,7 @@ export async function getOperationalData(
   session: MerchantSession,
   selection: DashboardFilterSelection,
 ): Promise<OperationalResponse> {
-  const latestMonth = selection.months[selection.months.length - 1];
+  const latestMonth = latestMonthValue(selection.months);
 
   const [statusSummary, keywordSummary, rules, transactions] = await Promise.all([
     query<{ status: string; total: string }>(
@@ -762,7 +773,7 @@ export async function getProgramsData(
   session: MerchantSession,
   selection: DashboardFilterSelection,
 ): Promise<ProgramsResponse> {
-  const latestMonth = selection.months[selection.months.length - 1];
+  const latestMonth = latestMonthValue(selection.months);
 
   const [rules, keywordMetrics, banners] = await Promise.all([
     query<{

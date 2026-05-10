@@ -100,22 +100,22 @@ export function MonthlyBarChart({
   dailyData: { label: string; redeem: number; uniqueRedeemer: number }[];
   monthLabel: string;
 }) {
-  const latestYear = monthlyData
-    .map((d) => Number(d.label.slice(0, 4)))
-    .filter((n) => Number.isFinite(n))
-    .sort((a, b) => b - a)[0];
-  const year = latestYear || new Date().getFullYear();
   const [mode, setMode] = React.useState<"monthly" | "daily">("monthly");
-
-  const monthKeys = Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, "0")}`);
   const monthShort = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-  const monthlyMap = new Map(monthlyData.map((d) => [d.label, d]));
-  const normalizedMonthly = monthKeys.map((key, i) => ({
-    label: monthShort[i],
-    full: key,
-    redeem: monthlyMap.get(key)?.redeem ?? 0,
-    uniqueRedeemer: monthlyMap.get(key)?.uniqueRedeemer ?? 0,
-  }));
+  const visibleMonthlyData = [...monthlyData.slice(-6)].reverse();
+  const normalizedMonthly = visibleMonthlyData.length
+    ? visibleMonthlyData.map((d) => {
+        const monthIndex = Number(d.label.slice(5, 7)) - 1;
+        const monthName = Number.isFinite(monthIndex) && monthIndex >= 0 ? monthShort[monthIndex] ?? d.label : d.label;
+
+        return {
+          label: monthName,
+          full: d.label,
+          redeem: d.redeem,
+          uniqueRedeemer: d.uniqueRedeemer,
+        };
+      })
+    : [{ label: "-", full: "-", redeem: 0, uniqueRedeemer: 0 }];
   const normalizedDaily = dailyData.map((d) => ({
     label: d.label.slice(-2),
     full: d.label,
@@ -125,7 +125,12 @@ export function MonthlyBarChart({
   const chartData = mode === "monthly" ? normalizedMonthly : normalizedDaily;
   const totalRedeem = chartData.reduce((s, x) => s + x.redeem, 0);
   const totalUnique = chartData.reduce((s, x) => s + x.uniqueRedeemer, 0);
-  const subLabel = mode === "monthly" ? String(year) : monthLabel;
+  const subLabel =
+    mode === "monthly"
+      ? visibleMonthlyData.length
+        ? `${visibleMonthlyData[0].label} - ${visibleMonthlyData.at(-1)?.label ?? visibleMonthlyData[0].label}`
+        : "-"
+      : monthLabel;
 
   return (
     <div className="glass-panel content-fade-in rounded-[28px] border border-slate-200 p-5 shadow-sm">
