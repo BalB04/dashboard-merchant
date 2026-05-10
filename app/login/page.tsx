@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 
 import { useGlobalLoading } from "@/components/global-loading-provider";
+import { loginMerchantAction } from "@/app/login/actions";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -24,17 +25,7 @@ export default function LoginPage() {
     try {
       setLoading(true);
       startPending();
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, password }),
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? "Login failed");
-      }
-
+      await loginMerchantAction({ identifier, password });
       router.replace("/");
       router.refresh();
     } catch (err) {

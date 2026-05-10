@@ -4,53 +4,9 @@ import Link from "next/link";
 import * as React from "react";
 
 import { DashboardFilterControls } from "@/components/dashboard-filter-controls";
-import { useDashboardFilters } from "@/components/dashboard-filter-provider";
-import { useBindGlobalLoading } from "@/components/global-loading-provider";
 import { KeywordPieChart, MiniLineChart, MonthlyBarChart } from "@/components/simple-charts";
 import { Activity, ListChecks, PieChart, Receipt, Search } from "lucide-react";
-import { buildFilterSearchParams } from "@/lib/dashboard-filters";
-
-type OverviewResponse = {
-  month: string;
-  monthLabel: string;
-  previousMonthLabel: string;
-  merchant: {
-    merchantKey: string;
-    email: string;
-    merchantNames: string[];
-    uniqMerchants: string[];
-    keywords: string[];
-  };
-  myKpi: {
-    redeem: number;
-    uniqueRedeemer: number;
-    burningPoin: number;
-    previous: {
-      redeem: number;
-      uniqueRedeemer: number;
-      burningPoin: number;
-    };
-  };
-  monthlyTrend: { month: string; redeem: number; uniqueRedeemer: number; burningPoin: number }[];
-  dailyTrend: { date: string; redeem: number; uniqueRedeemer: number; burningPoin: number }[];
-  keywordRules: {
-    keyword: string;
-    startPeriod: string;
-    endPeriod: string;
-    status: "active" | "upcoming" | "expired";
-    daysToEnd: number;
-  }[];
-  transactions: {
-    transactionAt: string;
-    keyword: string;
-    status: string;
-    qty: number;
-    redeemPointTotal: number;
-    msisdn: string;
-    branch: string;
-    cluster: string;
-  }[];
-};
+import type { OverviewResponse } from "@/lib/merchant-dashboard/types";
 
 const PAGE_SIZE = 10;
 
@@ -96,54 +52,16 @@ const getStatusTone = (status: string) => {
   }
 };
 
-export function OverviewContent() {
-  const { initialized, applied } = useDashboardFilters();
-  const monthsKey = React.useMemo(() => applied.months.join(","), [applied.months]);
-  const categoriesKey = React.useMemo(() => applied.categories.join(","), [applied.categories]);
-  const branchesKey = React.useMemo(() => applied.branches.join(","), [applied.branches]);
-  const [data, setData] = React.useState<OverviewResponse | null>(null);
-  const [loading, setLoading] = React.useState(false);
+export function OverviewContent({ initialData }: { initialData: OverviewResponse }) {
+  const [data, setData] = React.useState<OverviewResponse>(initialData);
   const [search, setSearch] = React.useState("");
   const [page, setPage] = React.useState(1);
 
-  useBindGlobalLoading(loading);
-
   React.useEffect(() => {
-    let active = true;
-    const controller = new AbortController();
-
-    const load = async () => {
-      try {
-        setLoading(true);
-        const params = buildFilterSearchParams(applied);
-        const response = await fetch(`/api/overview?${params.toString()}`, {
-          signal: controller.signal,
-        });
-        if (!response.ok) {
-          throw new Error("Failed to fetch overview");
-        }
-        const payload = (await response.json()) as OverviewResponse;
-        if (active) {
-          setData(payload);
-          setSearch("");
-          setPage(1);
-        }
-      } catch (error) {
-        if (active) console.error(error);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    if (initialized && applied.months.length) {
-      load();
-    }
-
-    return () => {
-      active = false;
-      controller.abort();
-    };
-  }, [initialized, monthsKey, categoriesKey, branchesKey, applied]);
+    setData(initialData);
+    setSearch("");
+    setPage(1);
+  }, [initialData]);
 
   const filteredRows = React.useMemo(() => {
     const rows = data?.transactions ?? [];
@@ -194,11 +112,6 @@ export function OverviewContent() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
   }, [data?.transactions]);
-
-  if (!data) {
-    if (loading) return null;
-    return <div className="px-6 py-6 text-sm text-slate-500">Tidak ada data</div>;
-  }
 
   const kpis = [
     { label: "Total Transaksi Berhasil", value: data.myKpi.redeem, prev: data.myKpi.previous.redeem },

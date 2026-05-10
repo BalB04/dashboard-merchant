@@ -3,33 +3,8 @@
 import * as React from "react";
 
 import { useBindGlobalLoading } from "@/components/global-loading-provider";
-
-type FeedbackType = "report" | "critic" | "suggestion";
-type FeedbackStatus = "open" | "in_progress" | "resolved";
-type FeedbackAttachment = {
-  fileName: string | null;
-  mimeType: string | null;
-  size: number | null;
-  downloadUrl: string;
-};
-
-type FeedbackItem = {
-  id: string;
-  type: FeedbackType;
-  category: string;
-  title: string;
-  message: string;
-  status: FeedbackStatus | "canceled";
-  attachment: FeedbackAttachment | null;
-  reply: string | null;
-  repliedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type FeedbackResponse = {
-  feedback: FeedbackItem[];
-};
+import { cancelFeedbackAction, submitFeedbackAction } from "@/app/feedback/actions";
+import type { FeedbackItem, FeedbackStatus, FeedbackType } from "@/lib/merchant-dashboard/types";
 
 const feedbackTypes: FeedbackType[] = ["report", "critic", "suggestion"];
 const feedbackCategories = ["UI", "Data", "Rule", "Promotion", "Other"];
@@ -61,10 +36,9 @@ const formatFileSize = (value: number | null) => {
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-export function FeedbackContent() {
+export function FeedbackContent({ initialHistory }: { initialHistory: FeedbackItem[] }) {
   const [tab, setTab] = React.useState<"create" | "history">("create");
-  const [history, setHistory] = React.useState<FeedbackItem[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [history, setHistory] = React.useState<FeedbackItem[]>(initialHistory);
   const [loadingError, setLoadingError] = React.useState<string | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = React.useState<string | null>(null);
@@ -78,34 +52,11 @@ export function FeedbackContent() {
   });
   const [attachment, setAttachment] = React.useState<File | null>(null);
 
-  useBindGlobalLoading(loading || isSubmitting || cancelingId !== null);
-
-  const loadFeedback = React.useCallback(async () => {
-    setLoading(true);
-    setLoadingError(null);
-
-    try {
-      const response = await fetch("/api/merchant/feedback", {
-        method: "GET",
-        cache: "no-store",
-      });
-
-      const body = (await response.json()) as FeedbackResponse | { error?: string };
-      if (!response.ok) {
-        throw new Error("error" in body && body.error ? body.error : "Failed to load feedback");
-      }
-
-      setHistory("feedback" in body && Array.isArray(body.feedback) ? body.feedback : []);
-    } catch (cause) {
-      setLoadingError(cause instanceof Error ? cause.message : "Failed to load feedback");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  useBindGlobalLoading(isSubmitting || cancelingId !== null);
 
   React.useEffect(() => {
-    void loadFeedback();
-  }, [loadFeedback]);
+    setHistory(initialHistory);
+  }, [initialHistory]);
 
   const updateField = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -127,18 +78,7 @@ export function FeedbackContent() {
         formData.append("attachment", attachment);
       }
 
-      const response = await fetch("/api/merchant/feedback", {
-        method: "POST",
-        body: formData,
-      });
-
-      const body = (await response.json()) as
-        | { feedback: FeedbackItem }
-        | { error?: string };
-
-      if (!response.ok) {
-        throw new Error("error" in body && body.error ? body.error : "Failed to submit feedback");
-      }
+      const created = await submitFeedbackAction(formData);
 
       setForm({
         type: "report",
@@ -147,9 +87,9 @@ export function FeedbackContent() {
         message: "",
       });
       setAttachment(null);
+      setHistory((current) => [created, ...current]);
       setSubmitSuccess("Feedback berhasil dikirim.");
       setTab("history");
-      await loadFeedback();
     } catch (cause) {
       setSubmitError(cause instanceof Error ? cause.message : "Failed to submit feedback");
     } finally {
@@ -162,20 +102,17 @@ export function FeedbackContent() {
     setLoadingError(null);
 
     try {
-      const response = await fetch("/api/merchant/feedback", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id, status: "canceled" }),
-      });
-      const body = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(body.error || "Failed to cancel feedback");
-      }
-
-      await loadFeedback();
+      await cancelFeedbackAction(id);
+      setHistory((current) =>
+        current.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                status: "canceled",
+              }
+            : item,
+        ),
+      );
     } catch (cause) {
       setLoadingError(cause instanceof Error ? cause.message : "Failed to cancel feedback");
     } finally {
@@ -228,10 +165,9 @@ export function FeedbackContent() {
         ) : (
           <FeedbackHistory
             history={history}
-            loading={loading}
+            loading={false}
             error={loadingError}
             cancelingId={cancelingId}
-            onRetry={loadFeedback}
             onCancel={handleCancel}
           />
         )}
@@ -330,14 +266,12 @@ function FeedbackHistory({
   loading,
   error,
   cancelingId,
-  onRetry,
   onCancel,
 }: {
   history: FeedbackItem[];
   loading: boolean;
   error: string | null;
   cancelingId: string | null;
-  onRetry: () => Promise<void>;
   onCancel: (id: string) => Promise<void>;
 }) {
   if (loading) {
@@ -348,13 +282,6 @@ function FeedbackHistory({
     return (
       <div className="space-y-3 py-4">
         <div className="text-sm text-rose-600">{error}</div>
-        <button
-          type="button"
-          onClick={() => void onRetry()}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
-        >
-          Coba lagi
-        </button>
       </div>
     );
   }

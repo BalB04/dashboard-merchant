@@ -13,49 +13,10 @@ import {
 } from "lucide-react";
 
 import { DashboardFilterControls } from "@/components/dashboard-filter-controls";
-import { useDashboardFilters } from "@/components/dashboard-filter-provider";
-import { useBindGlobalLoading } from "@/components/global-loading-provider";
-import { buildFilterSearchParams } from "@/lib/dashboard-filters";
+import type { Banner, ProgramsResponse } from "@/lib/merchant-dashboard/types";
 import diningImage from "../images/dining.jpg";
 import entertainmentImage from "../images/entertainment.jpg";
 import shoppingImage from "../images/shopping.jpg";
-
-type ProgramRow = {
-  ruleKey: string;
-  keyword: string;
-  merchantName: string;
-  uniqMerchant: string;
-  programName: string;
-  startPeriod: string;
-  endPeriod: string;
-  status: "active" | "upcoming" | "expired";
-  imageUrl: string | null;
-  redeem: number;
-  uniqueRedeemer: number;
-  burningPoin: number;
-  failed: number;
-};
-
-type Banner = {
-  id: string;
-  imageUrl?: string;
-  title: string;
-  subtitle: string;
-  cta: string;
-};
-
-type ProgramsResponse = {
-  month: string;
-  monthLabel: string;
-  banners: Banner[];
-  programs: ProgramRow[];
-  promotionPerformance: {
-    redeem: number;
-    uniqueRedeemer: number;
-    burningPoin: number;
-    failed: number;
-  };
-};
 
 const numberFmt = new Intl.NumberFormat("id-ID");
 const compactFmt = new Intl.NumberFormat("en-US", {
@@ -118,21 +79,13 @@ const daysBetween = (endPeriod: string, todayIso: string) =>
     0,
   );
 
-export function ProgramsContent() {
-  const { initialized, applied } = useDashboardFilters();
-  const monthsKey = React.useMemo(() => applied.months.join(","), [applied.months]);
-  const categoriesKey = React.useMemo(() => applied.categories.join(","), [applied.categories]);
-  const branchesKey = React.useMemo(() => applied.branches.join(","), [applied.branches]);
-
-  const [data, setData] = React.useState<ProgramsResponse | null>(null);
-  const [loading, setLoading] = React.useState(false);
+export function ProgramsContent({ initialData }: { initialData: ProgramsResponse }) {
+  const [data, setData] = React.useState<ProgramsResponse>(initialData);
   const [selectedKeyword, setSelectedKeyword] = React.useState<string | null>(null);
   const [selectedBanner, setSelectedBanner] = React.useState<Banner | null>(null);
   const [todayIso] = React.useState(() => new Date().toISOString().slice(0, 10));
   const programCarouselRef = React.useRef<HTMLDivElement | null>(null);
   const promotionCarouselRef = React.useRef<HTMLDivElement | null>(null);
-
-  useBindGlobalLoading(loading);
 
   React.useEffect(() => {
     if (!selectedBanner) return;
@@ -148,52 +101,15 @@ export function ProgramsContent() {
   }, [selectedBanner]);
 
   React.useEffect(() => {
-    let active = true;
-    const controller = new AbortController();
-
-    const load = async () => {
-      try {
-        setLoading(true);
-        const params = buildFilterSearchParams(applied);
-        const response = await fetch(`/api/programs?${params.toString()}`, {
-          signal: controller.signal,
-        });
-        if (!response.ok) {
-          throw new Error("Failed to fetch programs");
-        }
-
-        const payload = (await response.json()) as ProgramsResponse;
-        if (active) {
-          React.startTransition(() => {
-            setData(payload);
-            setSelectedKeyword(
-              payload.programs.find((program) => program.status === "active")?.keyword ??
-                payload.programs[0]?.keyword ??
-                null,
-            );
-          });
-        }
-      } catch (error) {
-        if (active) console.error(error);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    if (initialized && applied.months.length) {
-      load();
-    }
-
-    return () => {
-      active = false;
-      controller.abort();
-    };
-  }, [initialized, monthsKey, categoriesKey, branchesKey, applied]);
-
-  if (!data) {
-    if (loading) return null;
-    return <div className="px-6 py-6 text-sm text-slate-500">Tidak ada data</div>;
-  }
+    React.startTransition(() => {
+      setData(initialData);
+      setSelectedKeyword(
+        initialData.programs.find((program) => program.status === "active")?.keyword ??
+          initialData.programs[0]?.keyword ??
+          null,
+      );
+    });
+  }, [initialData]);
 
   const programs = data.programs;
   const activePrograms = programs.filter((program) => program.status === "active");

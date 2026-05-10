@@ -10,9 +10,11 @@ Create `.env` with:
 DATABASE_URL=postgres://user:pass@host:5432/dbname
 AUTH_SESSION_SECRET=replace-with-random-long-secret
 ADMIN_ASSET_BASE_URL=http://localhost:3000
+ADMIN_ASSET_SHARED_SECRET=replace-with-shared-secret-from-dashboard-admin
 ```
 
-`ADMIN_ASSET_BASE_URL` dipakai agar merchant dashboard bisa memuat image upload dari `dashboard_admin` saat DB menyimpan path relatif seperti `/uploads/banner-assets/...`.
+`ADMIN_ASSET_BASE_URL` dipakai agar merchant dashboard bisa memuat image upload dari `dashboard_admin`.
+`ADMIN_ASSET_SHARED_SECRET` harus sama dengan value di `dashboard_admin` agar merchant bisa membentuk signed URL untuk route asset admin yang terproteksi.
 
 ### Database setup
 

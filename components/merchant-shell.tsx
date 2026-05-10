@@ -5,6 +5,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { BarChart3, LogOut, Megaphone, MessageCircle, PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 
+import { logoutMerchantAction } from "@/app/actions/auth";
 import { useDashboardFilters } from "@/components/dashboard-filter-provider";
 import { useGlobalLoading } from "@/components/global-loading-provider";
 import { PageContentLoadingOverlay } from "@/components/page-top-loader";
@@ -43,7 +44,7 @@ export function MerchantShell({ active, children }: MerchantShellProps) {
     startPending();
     try {
       setLoggingOut(true);
-      await fetch("/api/auth/logout", { method: "POST" });
+      await logoutMerchantAction();
     } finally {
       router.replace("/login");
       router.refresh();

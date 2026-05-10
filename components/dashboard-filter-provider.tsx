@@ -1,75 +1,40 @@
 "use client";
 
 import * as React from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { useBindGlobalLoading } from "@/components/global-loading-provider";
-
-type FilterOption = {
-  value: string;
-  label: string;
-};
-
-type FilterSelection = {
-  months: string[];
-  categories: string[];
-  branches: string[];
-  keywords: string[];
-};
-
-type MerchantIdentity = {
-  email: string;
-  merchantKey: string;
-};
+import type {
+  DashboardFilterOptions,
+  DashboardFilterSelection,
+  MerchantIdentity,
+} from "@/lib/merchant-dashboard/types";
 
 type DashboardFilterContextValue = {
   initialized: boolean;
   loading: boolean;
   identity: MerchantIdentity | null;
-  options: {
-    months: FilterOption[];
-    categories: FilterOption[];
-    branches: FilterOption[];
-    keywords: FilterOption[];
-  };
-  applied: FilterSelection;
-  draft: FilterSelection;
+  options: DashboardFilterOptions;
+  applied: DashboardFilterSelection;
+  draft: DashboardFilterSelection;
   latestMonth: string;
-  setDraft: (next: Partial<FilterSelection>) => void;
+  setDraft: (next: Partial<DashboardFilterSelection>) => void;
   applyDraft: () => void;
   resetAll: () => void;
 };
 
 const STORAGE_KEY = "merchant_dashboard_filters_v1";
-const MONTH_REGEX = /^\d{4}-\d{2}$/;
 
 const DashboardFilterContext = React.createContext<DashboardFilterContextValue | null>(null);
 
 const normalizeList = (values: string[]) => Array.from(new Set(values.filter(Boolean))).sort();
 
-const parseMultiParam = (searchParams: URLSearchParams, key: string) =>
-  normalizeList(
-    searchParams
-      .getAll(key)
-      .flatMap((value) => value.split(","))
-      .map((value) => value.trim())
-  );
-
-const safeJsonParse = (raw: string | null): Partial<FilterSelection> | null => {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as Partial<FilterSelection>;
-  } catch {
-    return null;
-  }
-};
-
 const sanitizeSelection = (
-  value: Partial<FilterSelection> | null | undefined,
-  monthOptions: FilterOption[]
-): FilterSelection => {
+  value: Partial<DashboardFilterSelection> | null | undefined,
+  monthOptions: DashboardFilterOptions["months"],
+) => {
   const allMonths = monthOptions.map((option) => option.value);
-  const selectedMonths = normalizeList((value?.months ?? []).filter((month) => MONTH_REGEX.test(month)));
+  const selectedMonths = normalizeList((value?.months ?? []).filter((month) => allMonths.includes(month)));
 
   return {
     months: selectedMonths.length ? selectedMonths : allMonths,
@@ -79,162 +44,39 @@ const sanitizeSelection = (
   };
 };
 
-export function DashboardFilterProvider({ children }: { children: React.ReactNode }) {
+export function DashboardFilterProvider({
+  children,
+  initialIdentity,
+  initialOptions,
+  initialApplied,
+}: {
+  children: React.ReactNode;
+  initialIdentity: MerchantIdentity;
+  initialOptions: DashboardFilterOptions;
+  initialApplied: DashboardFilterSelection;
+}) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const initialSearchRef = React.useRef(searchParams.toString());
+  const [isPending, startTransition] = React.useTransition();
+  const [identity, setIdentity] = React.useState<MerchantIdentity | null>(initialIdentity);
+  const [options, setOptions] = React.useState(initialOptions);
+  const [applied, setApplied] = React.useState(initialApplied);
+  const [draft, setDraftState] = React.useState(initialApplied);
 
-  const [identity, setIdentity] = React.useState<MerchantIdentity | null>(null);
-  const [initialized, setInitialized] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
-  const [options, setOptions] = React.useState({
-    months: [] as FilterOption[],
-    categories: [] as FilterOption[],
-    branches: [] as FilterOption[],
-    keywords: [] as FilterOption[],
-  });
-  const [applied, setApplied] = React.useState<FilterSelection>({
-    months: [],
-    categories: [],
-    branches: [],
-    keywords: [],
-  });
-  const [draft, setDraftState] = React.useState<FilterSelection>({
-    months: [],
-    categories: [],
-    branches: [],
-    keywords: [],
-  });
-  const appliedMonthsKey = React.useMemo(() => applied.months.join(","), [applied.months]);
-
-  useBindGlobalLoading(loading);
+  useBindGlobalLoading(isPending);
 
   React.useEffect(() => {
-    let active = true;
-
-    const bootstrap = async () => {
-      try {
-        setLoading(true);
-
-        const sessionResponse = await fetch("/api/auth/session");
-        if (!sessionResponse.ok) {
-          window.location.href = "/login";
-          return;
-        }
-        const sessionPayload = (await sessionResponse.json()) as {
-          user: MerchantIdentity;
-        };
-
-        const monthResponse = await fetch("/api/overview/months");
-        if (!monthResponse.ok) {
-          throw new Error("Failed to load month options");
-        }
-        const monthPayload = (await monthResponse.json()) as { months: FilterOption[] };
-
-        if (!active) return;
-        setIdentity(sessionPayload.user);
-
-        const months = monthPayload.months ?? [];
-        setOptions((prev) => ({ ...prev, months }));
-
-        const initialSearch = new URLSearchParams(initialSearchRef.current);
-        const fromUrl: Partial<FilterSelection> = {
-          months: parseMultiParam(initialSearch, "month"),
-          categories: parseMultiParam(initialSearch, "category"),
-          branches: parseMultiParam(initialSearch, "branch"),
-          keywords: parseMultiParam(initialSearch, "keyword"),
-        };
-
-        const hasUrlValues =
-          fromUrl.months?.length ||
-          fromUrl.categories?.length ||
-          fromUrl.branches?.length ||
-          fromUrl.keywords?.length;
-        const fromStorage = safeJsonParse(window.localStorage.getItem(STORAGE_KEY));
-        const initialSelection = sanitizeSelection(hasUrlValues ? fromUrl : fromStorage, months);
-
-        setApplied(initialSelection);
-        setDraftState(initialSelection);
-        setInitialized(true);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    bootstrap();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+    setIdentity(initialIdentity);
+    setOptions(initialOptions);
+    setApplied(initialApplied);
+    setDraftState(initialApplied);
+  }, [initialApplied, initialIdentity, initialOptions]);
 
   React.useEffect(() => {
-    if (!initialized) return;
-    let active = true;
-
-    const loadFilterOptions = async () => {
-      try {
-        const params = new URLSearchParams();
-        applied.months.forEach((month) => params.append("month", month));
-        applied.categories.forEach((category) => params.append("category", category));
-        applied.branches.forEach((branch) => params.append("branch", branch));
-        const response = await fetch(`/api/filters/options?${params.toString()}`);
-        if (!response.ok) {
-          throw new Error("Failed to load filter options");
-        }
-
-        const payload = (await response.json()) as {
-          categories: FilterOption[];
-          branches: FilterOption[];
-          keywords: FilterOption[];
-        };
-
-        if (!active) return;
-        setOptions((prev) => ({
-          ...prev,
-          categories: payload.categories ?? [],
-          branches: payload.branches ?? [],
-          keywords: payload.keywords ?? [],
-        }));
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    loadFilterOptions();
-
-    return () => {
-      active = false;
-    };
-  }, [initialized, applied.branches, applied.categories, applied.months, appliedMonthsKey]);
-
-  React.useEffect(() => {
-    if (!initialized) return;
-
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(applied));
+  }, [applied]);
 
-    const params = new URLSearchParams();
-    const allMonths = options.months.map((option) => option.value);
-    const monthIsNoFilter =
-      applied.months.length === allMonths.length &&
-      allMonths.every((month) => applied.months.includes(month));
-
-    if (!monthIsNoFilter) {
-      applied.months.forEach((month) => params.append("month", month));
-    }
-    applied.categories.forEach((category) => params.append("category", category));
-    applied.branches.forEach((branch) => params.append("branch", branch));
-    applied.keywords.forEach((keyword) => params.append("keyword", keyword));
-
-    const query = params.toString();
-    const url = query ? `${pathname}?${query}` : pathname;
-    router.replace(url, { scroll: false });
-  }, [initialized, pathname, router, applied, options.months]);
-
-  const setDraft = React.useCallback((next: Partial<FilterSelection>) => {
+  const setDraft = React.useCallback((next: Partial<DashboardFilterSelection>) => {
     setDraftState((prev) => ({
       months: next.months ? normalizeList(next.months) : prev.months,
       categories: next.categories ? normalizeList(next.categories) : prev.categories,
@@ -243,20 +85,45 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
     }));
   }, []);
 
+  const applySelection = React.useCallback(
+    (selection: DashboardFilterSelection) => {
+      const normalized = sanitizeSelection(selection, options.months);
+      const allMonths = options.months.map((option) => option.value);
+      const monthIsNoFilter =
+        normalized.months.length === allMonths.length &&
+        allMonths.every((month) => normalized.months.includes(month));
+
+      const params = new URLSearchParams();
+      if (!monthIsNoFilter) {
+        normalized.months.forEach((month) => params.append("month", month));
+      }
+      normalized.categories.forEach((category) => params.append("category", category));
+      normalized.branches.forEach((branch) => params.append("branch", branch));
+      normalized.keywords.forEach((keyword) => params.append("keyword", keyword));
+
+      const nextUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+
+      setApplied(normalized);
+      setDraftState(normalized);
+      startTransition(() => {
+        router.replace(nextUrl, { scroll: false });
+      });
+    },
+    [options.months, pathname, router],
+  );
+
   const applyDraft = React.useCallback(() => {
-    const normalized = sanitizeSelection(draft, options.months);
-    setApplied(normalized);
-    setDraftState(normalized);
-  }, [draft, options.months]);
+    applySelection(draft);
+  }, [applySelection, draft]);
 
   const resetAll = React.useCallback(() => {
-    const resetValue = sanitizeSelection(
-      { months: options.months.map((option) => option.value), categories: [], branches: [], keywords: [] },
-      options.months
-    );
-    setApplied(resetValue);
-    setDraftState(resetValue);
-  }, [options.months]);
+    applySelection({
+      months: options.months.map((option) => option.value),
+      categories: [],
+      branches: [],
+      keywords: [],
+    });
+  }, [applySelection, options.months]);
 
   const latestMonth = React.useMemo(() => {
     if (!applied.months.length) return "";
@@ -266,8 +133,8 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
   const value = React.useMemo<DashboardFilterContextValue>(
     () => ({
       identity,
-      initialized,
-      loading,
+      initialized: true,
+      loading: isPending,
       options,
       applied,
       draft,
@@ -276,7 +143,7 @@ export function DashboardFilterProvider({ children }: { children: React.ReactNod
       applyDraft,
       resetAll,
     }),
-    [identity, initialized, loading, options, applied, draft, latestMonth, setDraft, applyDraft, resetAll]
+    [identity, isPending, options, applied, draft, latestMonth, setDraft, applyDraft, resetAll],
   );
 
   return <DashboardFilterContext.Provider value={value}>{children}</DashboardFilterContext.Provider>;
