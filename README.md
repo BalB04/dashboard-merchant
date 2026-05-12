@@ -1,85 +1,152 @@
-## Merchant Dashboard
+# Merchant Dashboard
 
-Merchant-facing analytics dashboard with row-level scoping per authenticated merchant.
+Merchant-facing analytics dashboard with row-level scoping for authenticated merchants.
 
-### Required env
+## Local Setup
 
-Create `.env` with:
+1. Install dependencies:
 
 ```bash
+pnpm install
+```
+
+2. Create `.env`:
+
+```env
 DATABASE_URL=postgres://user:pass@host:5432/dbname
 AUTH_SESSION_SECRET=replace-with-random-long-secret
 ADMIN_ASSET_BASE_URL=http://localhost:3000
 ADMIN_ASSET_SHARED_SECRET=replace-with-shared-secret-from-dashboard-admin
 ```
 
-`ADMIN_ASSET_BASE_URL` dipakai agar merchant dashboard bisa memuat image upload dari `dashboard_admin`.
-`ADMIN_ASSET_SHARED_SECRET` harus sama dengan value di `dashboard_admin` agar merchant bisa membentuk signed URL untuk route asset admin yang terproteksi.
+`ADMIN_ASSET_BASE_URL` lets the merchant dashboard load uploaded images from `dashboard_admin`.
+`ADMIN_ASSET_SHARED_SECRET` must match the value used in `dashboard_admin` so the merchant app can generate signed URLs for the protected asset route.
 
-### Database setup
+3. Generate or inspect the schema from the current database if needed:
 
-1. Generate or inspect schema from the current database if needed:
+```bash
+pnpm db:introspect
+```
 
-`pnpm db:introspect`
+4. Apply the Drizzle migration baseline:
 
-2. Apply Drizzle migration baseline:
+```bash
+pnpm db:migrate
+```
 
-`pnpm db:migrate`
+5. Seed a merchant user mapping:
 
-3. Seed a merchant user mapping using:
+```bash
+MERCHANT_EMAIL=... MERCHANT_USERNAME=... MERCHANT_PASSWORD=... MERCHANT_KEY=... pnpm db:seed:merchant-user
+```
 
-`MERCHANT_EMAIL=... MERCHANT_USERNAME=... MERCHANT_PASSWORD=... MERCHANT_KEY=... pnpm db:seed:merchant-user`
-
-Default scope adalah `merchant`, artinya user hanya terhubung ke 1 `merchant_key`.
-Kalau user harus mewakili 1 canonical merchant yang punya beberapa `merchant_key`, set `MERCHANT_SCOPE_TYPE=canonical`.
+The default scope is `merchant`, which means the user is linked to a single `merchant_key`.
+If the user should represent a canonical merchant that owns multiple `merchant_key` values, set `MERCHANT_SCOPE_TYPE=canonical`.
 
 For `MERCHANT_PASSWORD_HASH`, use `salt_hex:hash_hex`. If `MERCHANT_PASSWORD_HASH` is provided, `MERCHANT_PASSWORD` is optional.
 
-4. Sync canonical merchant mapping table (groups multiple `merchant_key` per `uniq_merchant`):
-
-`pnpm db:sync:canonical-map`
-
-5. If one merchant brand has multiple `merchant_key` values, preview normalization:
-
-`pnpm db:normalize:merchant-key`
-
-Apply it with:
-
-`pnpm db:normalize:merchant-key -- --apply`
-
-Canonical grouping key is `dim_merchant.uniq_merchant`.
-
-6. (Optional) Preview empty `users.username` backfill from `dim_merchant.uniq_merchant`:
-
-`pnpm db:sync:usernames`
-
-Apply it with:
-
-`pnpm db:sync:usernames -- --apply`
-
-7. (Optional) Auto-create missing merchant users from canonical mapping:
-
-`pnpm db:create:merchant-users`
-
-### Database scripts
-
-#### `pnpm db:sync:canonical-map`
-
-Sync isi `merchant_canonical_map` dari `dim_merchant`.
-
-Pakai saat:
-- ada perubahan data `dim_merchant`
-- ingin refresh `canonical_merchant_key` per `uniq_merchant`
-
-Contoh:
+6. Sync the canonical merchant mapping table:
 
 ```bash
 pnpm db:sync:canonical-map
 ```
 
-#### `pnpm db:normalize:merchant-key`
+7. If one merchant brand has multiple `merchant_key` values, preview normalization:
 
-Preview merchant dengan lebih dari satu `merchant_key`, lalu jika disetujui remap ke canonical key.
+```bash
+pnpm db:normalize:merchant-key
+```
+
+Apply it with:
+
+```bash
+pnpm db:normalize:merchant-key -- --apply
+```
+
+The canonical grouping key is `dim_merchant.uniq_merchant`.
+
+8. Optional: preview empty `users.username` backfill from `dim_merchant.uniq_merchant`:
+
+```bash
+pnpm db:sync:usernames
+```
+
+Apply it with:
+
+```bash
+pnpm db:sync:usernames -- --apply
+```
+
+9. Optional: auto-create missing merchant users from canonical mapping:
+
+```bash
+pnpm db:create:merchant-users
+```
+
+## Docker Setup
+
+Use `../docker-compose.yaml` from the root workspace.
+
+This service uses:
+
+- [`docker/Dockerfile`](./docker/Dockerfile)
+
+Builds are run from `../docker-compose.yaml` with build context `./dashboard-merchant`.
+
+Runtime secrets are read from `/.secrets/` at the root of the project, not from the Dockerfile:
+
+- `database_url`
+- `auth_session_secret`
+- `admin_asset_shared_secret`
+
+`ADMIN_ASSET_SHARED_SECRET` must match the value used in `dashboard_admin`.
+
+### Docker Commands
+
+Run from the root workspace `../`:
+
+```bash
+docker compose -f docker-compose.yaml up --build
+docker compose -f docker-compose.yaml up --build dashboard-admin
+docker compose -f docker-compose.yaml up --build dashboard-merchant
+docker compose -f docker-compose.yaml run --rm schema-migrate
+docker compose -f docker-compose.yaml down
+docker compose -f docker-compose.yaml logs -f
+```
+
+If Postgres was started before and the data directory is dirty, reset the volume first:
+
+```bash
+docker compose -f docker-compose.yaml down -v
+```
+
+If you need to build this service image directly:
+
+```bash
+docker build -f docker/Dockerfile .
+```
+
+The `schema-migrate` service runs automatically before the apps start, so the database schema is applied before the dashboard queries the shared database.
+
+## Database Scripts
+
+### `pnpm db:sync:canonical-map`
+
+Sync the contents of `merchant_canonical_map` from `dim_merchant`.
+
+Use it when:
+- `dim_merchant` data changes
+- you need to refresh `canonical_merchant_key` per `uniq_merchant`
+
+Example:
+
+```bash
+pnpm db:sync:canonical-map
+```
+
+### `pnpm db:normalize:merchant-key`
+
+Preview merchants with more than one `merchant_key`, then remap them to the canonical key if approved.
 
 Preview:
 
@@ -93,14 +160,14 @@ Apply:
 pnpm db:normalize:merchant-key -- --apply
 ```
 
-Efek saat apply:
-- update `merchant_users`
-- update `dim_rule.rule_merchant`
-- update `fact_transaction.merchant_key`
+Effects when applied:
+- updates `merchant_users`
+- updates `dim_rule.rule_merchant`
+- updates `fact_transaction.merchant_key`
 
-#### `pnpm db:sync:usernames`
+### `pnpm db:sync:usernames`
 
-Preview atau isi `users.username` yang kosong dari `dim_merchant.uniq_merchant`.
+Preview or backfill empty `users.username` values from `dim_merchant.uniq_merchant`.
 
 Preview:
 
@@ -114,15 +181,15 @@ Apply:
 pnpm db:sync:usernames -- --apply
 ```
 
-#### `pnpm db:seed:merchant-user`
+### `pnpm db:seed:merchant-user`
 
-Seed 1 merchant user dan mapping ke `merchant_users`.
+Seed one merchant user and map it into `merchant_users`.
 
-`MERCHANT_SCOPE_TYPE` tersedia:
-- `merchant`: user hanya akses `MERCHANT_KEY`
-- `canonical`: user akses semua merchant dalam canonical group dari `MERCHANT_KEY`
+`MERCHANT_SCOPE_TYPE` options:
+- `merchant`: the user can access only `MERCHANT_KEY`
+- `canonical`: the user can access all merchants in the canonical group for `MERCHANT_KEY`
 
-Contoh dengan password plain text:
+Example with a plain-text password:
 
 ```bash
 MERCHANT_EMAIL=merchant.demo@example.com \
@@ -132,7 +199,7 @@ MERCHANT_KEY=c670d687-2b27-5382-8888-57db91d31f68 \
 pnpm db:seed:merchant-user
 ```
 
-Contoh akun canonical:
+Example canonical account:
 
 ```bash
 MERCHANT_EMAIL=merchant.group@example.com \
@@ -143,7 +210,7 @@ MERCHANT_SCOPE_TYPE=canonical \
 pnpm db:seed:merchant-user
 ```
 
-Contoh dengan password hash:
+Example with a password hash:
 
 ```bash
 MERCHANT_EMAIL=merchant.demo@example.com \
@@ -153,11 +220,11 @@ MERCHANT_KEY=c670d687-2b27-5382-8888-57db91d31f68 \
 pnpm db:seed:merchant-user
 ```
 
-#### `pnpm db:create:merchant-users`
+### `pnpm db:create:merchant-users`
 
-Membuat akun merchant massal untuk canonical merchant yang belum punya user aktif.
+Create merchant accounts in bulk for canonical merchants that do not yet have an active user.
 
-Contoh:
+Example:
 
 ```bash
 pnpm db:create:merchant-users
@@ -170,11 +237,11 @@ email,username,password,merchant_key
 merchant_a@merchant.local,merchant_a,AbC123xYz890,c670d687-2b27-5382-8888-57db91d31f68
 ```
 
-Simpan output password jika akun akan dipakai login.
+Save the password output if the account will be used for login.
 
-### Recommended flow
+## Recommended Flow
 
-Jika sedang bootstrap data auth merchant dari database existing, urutan yang aman:
+If you are bootstrapping merchant auth data from an existing database, the safe order is:
 
 1. `pnpm db:migrate`
 2. `pnpm db:sync:canonical-map`
@@ -182,21 +249,21 @@ Jika sedang bootstrap data auth merchant dari database existing, urutan yang ama
 4. `pnpm db:normalize:merchant-key -- --apply`
 5. `pnpm db:sync:usernames`
 6. `pnpm db:sync:usernames -- --apply`
-7. `pnpm db:create:merchant-users` atau `pnpm db:seed:merchant-user`
+7. `pnpm db:create:merchant-users` or `pnpm db:seed:merchant-user`
 
-### Auth flow
+## Auth Flow
 
-- `POST /api/auth/login` sets secure httpOnly cookie session.
-- `POST /api/auth/logout` clears session cookie.
-- `GET /api/auth/session` returns merchant identity from session.
+- `POST /api/auth/login` sets a secure `httpOnly` cookie session
+- `POST /api/auth/logout` clears the session cookie
+- `GET /api/auth/session` returns merchant identity from the session
 
-### Security model
+## Security Model
 
-- Dashboard APIs resolve merchant context from session -> `users` + `merchant_users`.
-- API queries enforce `merchant_key = mapped merchant_key`.
-- Client-provided merchant identity is ignored.
+- Dashboard APIs resolve merchant context from session -> `users` + `merchant_users`
+- API queries enforce `merchant_key = mapped merchant_key`
+- Client-provided merchant identity is ignored
 
-### Merchant dashboard routes
+## Merchant Dashboard Routes
 
 - `/login`
 - `/` (Overview)
