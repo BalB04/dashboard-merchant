@@ -1,8 +1,8 @@
 import { sql } from "drizzle-orm";
 
-import { db } from "../lib/db";
-import { merchantUsers, users } from "../lib/db/schema";
-import { hashPassword } from "../lib/security/password";
+import { db } from "../src/lib/db";
+import { merchantUsers, users } from "../src/lib/db/schema";
+import { hashPassword } from "../src/lib/security/password";
 import { requireEnv } from "./_helpers";
 
 const email = requireEnv("MERCHANT_EMAIL").toLowerCase();

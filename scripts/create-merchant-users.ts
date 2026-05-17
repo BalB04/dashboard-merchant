@@ -1,8 +1,8 @@
 import { randomBytes, scryptSync } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 
-import { db } from "../lib/db";
-import { merchantUsers, users } from "../lib/db/schema";
+import { db } from "../src/lib/db";
+import { merchantUsers, users } from "../src/lib/db/schema";
 
 const PASSWORD_LENGTH = 12;
 const SALT_BYTES = 16;

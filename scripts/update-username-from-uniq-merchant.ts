@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 
-import { db } from "../lib/db";
+import { db } from "../src/lib/db";
 import { hasApplyFlag } from "./_helpers";
 
 const baseQuery = sql`

@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 
-import { db } from "../lib/db";
+import { db } from "../src/lib/db";
 
 const run = async () => {
   await db.execute(sql`
