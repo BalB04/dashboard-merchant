@@ -17,12 +17,11 @@ export async function loginMerchantAction(input: { identifier: string; password:
   const result = await query<{
     id: number;
     password_hash: string;
-    role: string;
     is_active: boolean;
   }>(
     `
-      select id, password_hash, role, is_active
-      from users
+      select id, password_hash, is_active
+      from user_accounts
       where lower(email) = $1 or lower(username) = $1
       limit 1
     `,
@@ -30,7 +29,7 @@ export async function loginMerchantAction(input: { identifier: string; password:
   );
 
   const user = result.rows[0];
-  if (!user || !user.is_active || user.role !== "merchant") {
+  if (!user || !user.is_active) {
     throw new Error("Invalid credentials");
   }
 
@@ -41,9 +40,8 @@ export async function loginMerchantAction(input: { identifier: string; password:
   const mapping = await query<{ merchant_key: string }>(
     `
       select merchant_key
-      from merchant_users
-      where user_id = $1
-        and is_active = true
+      from dim_merchant
+      where user_account_id = $1
       limit 1
     `,
     [user.id],

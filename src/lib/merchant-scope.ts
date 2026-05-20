@@ -1,14 +1,8 @@
-export const merchantScopeCte = (merchantKeyParam = 1, scopeTypeParam = 2) => `
+export const merchantScopeCte = (userAccountIdParam = 1, scopeMarkerParam = 2) => `
   with merchant_scope as (
-    select $${merchantKeyParam}::uuid as merchant_key
-    where $${scopeTypeParam}::merchant_scope_type = 'merchant'
-    union
-    select mcm.merchant_key
-    from merchant_canonical_map mcm
-    where $${scopeTypeParam}::merchant_scope_type = 'canonical'
-      and mcm.canonical_merchant_key = $${merchantKeyParam}::uuid
-    union
-    select $${merchantKeyParam}::uuid
-    where $${scopeTypeParam}::merchant_scope_type = 'canonical'
+    select dm.merchant_key
+    from dim_merchant dm
+    where dm.user_account_id = $${userAccountIdParam}::bigint
+      and $${scopeMarkerParam}::text = 'account'
   )
 `;

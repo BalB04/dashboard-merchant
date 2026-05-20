@@ -8,7 +8,7 @@
  *
  * Custom migration SQL (migration_custom.sql) handles:
  *   - Extensions  : btree_gist, pgcrypto
- *   - ENUM types  : merchant_scope_type, transaction_status
+ *   - ENUM types  : transaction_status
  *   - GiST index  : dim_rule_idx_dim_rule_period
  *   - EXCLUDE constraint : ex_dim_rule_no_overlap
  *   - VIEWs       : vw_overview_transaction, vw_merchant_tx_monthly_agg, vw_rule_merchant_dim
@@ -31,10 +31,11 @@ import {
   timestamp,
   date,
   jsonb,
-  unique,
   index,
   uniqueIndex,
   customType,
+  check,
+  foreignKey,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -57,8 +58,6 @@ export const stgSchema = pgSchema("stg");
 // ─────────────────────────────────────────────
 // ENUMs  (must exist before tables that reference them)
 // ─────────────────────────────────────────────
-export const merchantScopeTypeEnum = pgEnum("merchant_scope_type", ["merchant", "canonical"]);
-
 export const transactionStatusEnum = pgEnum("transaction_status", ["success", "failed"]);
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -103,14 +102,12 @@ export const adminSessions = pgTable(
   ],
 );
 
-// ── users ─────────────────────────────────────
-// role CHECK constraint: ('merchant','admin') → handled in migration_custom.sql
-export const users = pgTable("users", {
+// ── user_accounts ─────────────────────────────
+export const userAccounts = pgTable("user_accounts", {
   id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey().notNull(),
-  email: text("email").notNull().unique("users_email_unique"),
-  username: text("username").unique("users_username_unique"),
+  email: text("email").notNull().unique("user_accounts_email_unique"),
+  username: text("username").unique("user_accounts_username_unique"),
   passwordHash: text("password_hash").notNull(),
-  role: text("role").default("merchant").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" }).defaultNow().notNull(),
@@ -146,10 +143,15 @@ export const dimMerchant = pgTable(
     categoryId: integer("category_id")
       .notNull()
       .references(() => dimCategory.categoryId),
+    userAccountId: bigint("user_account_id", { mode: "number" }).references(
+      () => userAccounts.id,
+      { onDelete: "set null" },
+    ),
   },
   (t) => [
     index("dim_merchant_idx_dim_merchant_category_id").on(t.categoryId),
     index("dim_merchant_idx_dim_merchant_cluster_id").on(t.clusterId),
+    index("dim_merchant_idx_user_account_id").on(t.userAccountId),
   ],
 );
 
@@ -218,14 +220,6 @@ export const factTransaction = pgTable(
   ],
 );
 
-// ── merchant_canonical_map ────────────────────
-export const merchantCanonicalMap = pgTable("merchant_canonical_map", {
-  merchantKey: uuid("merchant_key").primaryKey().notNull(),
-  canonicalMerchantKey: uuid("canonical_merchant_key").notNull(),
-  uniqMerchant: text("uniq_merchant").notNull(),
-  createdAt: timestamp("created_at", { mode: "string" }).default(sql`now()`),
-});
-
 // ── merchant_feedback ─────────────────────────
 // status CHECK ('open','in_progress','resolved','canceled') → migration_custom.sql
 // type   CHECK ('report','critic','suggestion')             → migration_custom.sql
@@ -236,7 +230,7 @@ export const merchantFeedback = pgTable(
     merchantKey: uuid("merchant_key").notNull(),
     userId: bigint("user_id", { mode: "number" })
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+      .references(() => userAccounts.id, { onDelete: "cascade" }),
     type: text("type").notNull(),
     category: text("category").notNull(),
     title: text("title").notNull(),
@@ -262,36 +256,12 @@ export const merchantFeedback = pgTable(
   ],
 );
 
-// ── merchant_users ────────────────────────────
-export const merchantUsers = pgTable(
-  "merchant_users",
-  {
-    userId: bigint("user_id", { mode: "number" })
-      .primaryKey()
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    merchantKey: uuid("merchant_key").notNull(),
-    isActive: boolean("is_active").default(true).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" })
-      .defaultNow()
-      .notNull(),
-    scopeType: merchantScopeTypeEnum("scope_type").default("merchant").notNull(),
-  },
-  (t) => [
-    unique("merchant_users_user_id_merchant_key_unique").on(t.userId, t.merchantKey),
-    index("idx_merchant_users_merchant_key").on(t.merchantKey),
-  ],
-);
-
 // ── provider_banners ──────────────────────────
 export const providerBanners = pgTable(
   "provider_banners",
   {
     id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey().notNull(),
-    imageKey: text("image_key").notNull(),
+    imageUrl: text("image_url").notNull(),
     title: text("title").notNull(),
     subtitle: text("subtitle").notNull(),
     cta: text("cta").notNull(),
@@ -309,6 +279,42 @@ export const providerBanners = pgTable(
   (t) => [
     index("idx_provider_banners_active").on(t.isActive),
     index("idx_provider_banners_sort").on(t.sortOrder),
+  ],
+);
+
+export const programBannerAssets = pgTable(
+  "program_banner_assets",
+  {
+    id: bigint({ mode: "number" }).primaryKey().generatedByDefaultAsIdentity({
+      name: "program_banner_assets_id_seq",
+      startWith: 1,
+      increment: 1,
+    }),
+    ruleKey: uuid("rule_key"),
+    keywordCode: text("keyword_code"),
+    imageUrl: text("image_url").notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("idx_program_banner_assets_active").on(t.isActive),
+    index("idx_program_banner_assets_keyword_code").on(t.keywordCode),
+    index("idx_program_banner_assets_rule_key").on(t.ruleKey),
+    check("program_banner_assets_target_check", sql`num_nonnulls(rule_key, keyword_code) = 1`),
+    foreignKey({
+      columns: [t.ruleKey],
+      foreignColumns: [dimRule.ruleKey],
+      name: "program_banner_assets_rule_key_dim_rule_rule_key_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [t.keywordCode],
+      foreignColumns: [dimMerchant.keywordCode],
+      name: "program_banner_assets_keyword_code_dim_merchant_keyword_code_fk",
+    }).onDelete("cascade"),
+    uniqueIndex("program_banner_assets_rule_key_unique").on(t.ruleKey),
+    uniqueIndex("program_banner_assets_keyword_code_unique").on(t.keywordCode),
   ],
 );
 

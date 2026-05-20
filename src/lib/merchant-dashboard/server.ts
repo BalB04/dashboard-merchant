@@ -114,7 +114,7 @@ async function getAvailableMonthOptions(session: MerchantSession): Promise<Filte
       group by date_trunc('month', ft.transaction_at)
       order by date_trunc('month', ft.transaction_at) desc
     `,
-    [session.merchantKey, session.scopeType],
+    [session.userId, session.scopeType],
   );
 
   const now = new Date();
@@ -157,7 +157,7 @@ async function getFilterOptions(
           and ($4::text[] is null or cardinality($4::text[]) = 0 or dcl.branch = any($4::text[]))
         order by dc.category
       `,
-      [session.merchantKey, session.scopeType, selection.months, selection.branches],
+      [session.userId, session.scopeType, selection.months, selection.branches],
     ),
     query<{ value: string }>(
       `
@@ -173,7 +173,7 @@ async function getFilterOptions(
           and ($4::text[] is null or cardinality($4::text[]) = 0 or dc.category = any($4::text[]))
         order by dcl.branch
       `,
-      [session.merchantKey, session.scopeType, selection.months, selection.categories],
+      [session.userId, session.scopeType, selection.months, selection.categories],
     ),
     query<{ value: string }>(
       `
@@ -190,7 +190,7 @@ async function getFilterOptions(
           and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
         order by dm.keyword_code
       `,
-      [session.merchantKey, session.scopeType, selection.months, selection.categories, selection.branches],
+      [session.userId, session.scopeType, selection.months, selection.categories, selection.branches],
     ),
   ]);
 
@@ -272,7 +272,7 @@ export async function getOverviewData(
           and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
           and ($6::text[] is null or cardinality($6::text[]) = 0 or dm.keyword_code = any($6::text[]))
       `,
-      [session.merchantKey, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
+      [session.userId, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
     ),
     query<{ redeem: string; unique_redeemer: string; burning_poin: string }>(
       `
@@ -292,7 +292,7 @@ export async function getOverviewData(
           and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
           and ($6::text[] is null or cardinality($6::text[]) = 0 or dm.keyword_code = any($6::text[]))
       `,
-      [session.merchantKey, session.scopeType, previousMonth, selection.categories, selection.branches, selection.keywords],
+      [session.userId, session.scopeType, previousMonth, selection.categories, selection.branches, selection.keywords],
     ),
     query<{
       merchant_names: string[] | null;
@@ -322,7 +322,7 @@ export async function getOverviewData(
           and ($4::text[] is null or cardinality($4::text[]) = 0 or dcl.branch = any($4::text[]))
           and ($5::text[] is null or cardinality($5::text[]) = 0 or dm.keyword_code = any($5::text[]))
       `,
-      [session.merchantKey, session.scopeType, selection.categories, selection.branches, selection.keywords],
+      [session.userId, session.scopeType, selection.categories, selection.branches, selection.keywords],
     ),
   ]);
 
@@ -348,7 +348,7 @@ export async function getOverviewData(
         group by date(ft.transaction_at)
         order by date(ft.transaction_at)
       `,
-      [session.merchantKey, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
+      [session.userId, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
     ),
     query<{ month: string; redeem: string; unique_redeemer: string; burning_poin: string }>(
       `
@@ -372,7 +372,7 @@ export async function getOverviewData(
         group by date_trunc('month', ft.transaction_at)
         order by date_trunc('month', ft.transaction_at)
       `,
-      [session.merchantKey, session.scopeType, addMonths(latestStart, -5), latestEnd, selection.categories, selection.branches, selection.keywords],
+      [session.userId, session.scopeType, addMonths(latestStart, -5), latestEnd, selection.categories, selection.branches, selection.keywords],
     ),
     query<{
       keyword: string;
@@ -399,7 +399,7 @@ export async function getOverviewData(
         order by vrmd.end_period asc
         limit 50
       `,
-      [session.merchantKey, session.scopeType, selection.keywords],
+      [session.userId, session.scopeType, selection.keywords],
     ),
     query<{
       transaction_at: string;
@@ -438,7 +438,7 @@ export async function getOverviewData(
         order by ft.transaction_at desc
         limit 1000
       `,
-      [session.merchantKey, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
+      [session.userId, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
     ),
   ]);
 
@@ -543,7 +543,7 @@ export async function getOperationalData(
           and ($6::text[] is null or cardinality($6::text[]) = 0 or dm.keyword_code = any($6::text[]))
         group by ft.status
       `,
-      [session.merchantKey, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
+      [session.userId, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
     ),
     query<{
       keyword: string;
@@ -570,7 +570,7 @@ export async function getOperationalData(
         group by dm.keyword_code
         order by total_redeem desc
       `,
-      [session.merchantKey, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
+      [session.userId, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
     ),
     query<{
       keyword: string;
@@ -596,7 +596,7 @@ export async function getOperationalData(
           and ($3::text[] is null or cardinality($3::text[]) = 0 or vrmd.keyword_code = any($3::text[]))
         order by vrmd.end_period asc
       `,
-      [session.merchantKey, session.scopeType, selection.keywords],
+      [session.userId, session.scopeType, selection.keywords],
     ),
     query<{
       transaction_at: string;
@@ -635,7 +635,7 @@ export async function getOperationalData(
         order by ft.transaction_at desc
         limit 1000
       `,
-      [session.merchantKey, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
+      [session.userId, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
     ),
   ]);
 
@@ -804,7 +804,7 @@ export async function getProgramsData(
         where vrmd.merchant_key in (select merchant_key from merchant_scope)
         order by vrmd.end_period asc
       `,
-      [session.merchantKey, session.scopeType],
+      [session.userId, session.scopeType],
     ),
     query<{
       keyword: string;
@@ -833,7 +833,7 @@ export async function getProgramsData(
         group by dm.keyword_code
         order by total_redeem desc, dm.keyword_code asc
       `,
-      [session.merchantKey, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
+      [session.userId, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
     ),
     loadProviderBanners(),
   ]);
