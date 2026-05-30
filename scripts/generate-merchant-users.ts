@@ -77,7 +77,7 @@ const run = async () => {
   `);
 
   if (targets.rows.length === 0) {
-    console.log("No unassigned merchants found. Nothing to create.");
+    console.log("No unassigned merchants found. Nothing to generate.");
     return;
   }
 
@@ -96,13 +96,13 @@ const run = async () => {
         email,
         username,
         passwordHash,
-        isActive: true,
+        isActive: false,
       })
       .returning({ id: userAccounts.id });
 
     const userId = created[0]?.id;
     if (!userId) {
-      throw new Error(`Failed to create account for ${target.uniq_merchant}`);
+      throw new Error(`Failed to generate account for ${target.uniq_merchant}`);
     }
 
     await db

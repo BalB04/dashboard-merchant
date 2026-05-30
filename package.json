@@ -12,9 +12,10 @@
     "db:migrate": "bash -lc \"if [ -z \\\"$DATABASE_URL\\\" ]; then set -a; source .env; set +a; fi; drizzle-kit migrate\"",
     "db:push": "bash -lc \"if [ -z \\\"$DATABASE_URL\\\" ]; then set -a; source .env; set +a; fi; drizzle-kit push\"",
     "db:studio": "bash -lc \"if [ -z \\\"$DATABASE_URL\\\" ]; then set -a; source .env; set +a; fi; drizzle-kit studio\"",
-    "db:seed:merchant-user": "bash -lc \"if [ -z \\\"$DATABASE_URL\\\" ]; then set -a; source .env; set +a; fi; tsx scripts/seed-merchant-user.ts\"",
-    "db:sync:usernames": "bash -lc \"if [ -z \\\"$DATABASE_URL\\\" ]; then set -a; source .env; set +a; fi; tsx scripts/update-username-from-uniq-merchant.ts\"",
-    "db:create:user-accounts": "bash -lc \"if [ -z \\\"$DATABASE_URL\\\" ]; then set -a; source .env; set +a; fi; tsx scripts/create-user-accounts.ts\""
+    "db:seed:single-merchant-user": "bash -lc \"if [ -z \\\"$DATABASE_URL\\\" ]; then set -a; source .env; set +a; fi; tsx scripts/seed-single-merchant-user.ts\"",
+    "db:generate:merchant-users": "bash -lc \"if [ -z \\\"$DATABASE_URL\\\" ]; then set -a; source .env; set +a; fi; tsx scripts/generate-merchant-users.ts\"",
+    "db:delete:merchant-users": "bash -lc \"if [ -z \\\"$DATABASE_URL\\\" ]; then set -a; source .env; set +a; fi; tsx scripts/delete-merchant-users.ts\"",
+    "db:set:user-password": "bash -lc \"if [ -z \\\"$DATABASE_URL\\\" ]; then set -a; source .env; set +a; fi; tsx scripts/change-user-password.ts\""
   },
   "dependencies": {
     "drizzle-orm": "^0.44.6",

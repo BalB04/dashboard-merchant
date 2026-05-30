@@ -37,7 +37,7 @@ pnpm db:migrate
 5. Seed a merchant user mapping:
 
 ```bash
-MERCHANT_EMAIL=... MERCHANT_USERNAME=... MERCHANT_PASSWORD=... MERCHANT_KEY=... pnpm db:seed:merchant-user
+MERCHANT_EMAIL=... MERCHANT_USERNAME=... MERCHANT_PASSWORD=... MERCHANT_KEY=... pnpm db:seed:single-merchant-user
 ```
 
 The default scope is `merchant`, which means the user is linked to a single `merchant_key`.
@@ -80,7 +80,7 @@ pnpm db:sync:usernames -- --apply
 9. Optional: auto-create missing merchant users from canonical mapping:
 
 ```bash
-pnpm db:create:merchant-users
+    pnpm db:generate:merchant-users
 ```
 
 ## Docker Setup
@@ -181,7 +181,7 @@ Apply:
 pnpm db:sync:usernames -- --apply
 ```
 
-### `pnpm db:seed:merchant-user`
+### `pnpm db:seed:single-merchant-user`
 
 Seed one merchant user and map it into `merchant_users`.
 
@@ -196,7 +196,7 @@ MERCHANT_EMAIL=merchant.demo@example.com \
 MERCHANT_USERNAME=merchant_demo \
 MERCHANT_PASSWORD=rahasia123 \
 MERCHANT_KEY=c670d687-2b27-5382-8888-57db91d31f68 \
-pnpm db:seed:merchant-user
+pnpm db:seed:single-merchant-user
 ```
 
 Example canonical account:
@@ -207,7 +207,7 @@ MERCHANT_USERNAME=merchant_group \
 MERCHANT_PASSWORD=rahasia123 \
 MERCHANT_KEY=c670d687-2b27-5382-8888-57db91d31f68 \
 MERCHANT_SCOPE_TYPE=canonical \
-pnpm db:seed:merchant-user
+pnpm db:seed:single-merchant-user
 ```
 
 Example with a password hash:
@@ -217,17 +217,17 @@ MERCHANT_EMAIL=merchant.demo@example.com \
 MERCHANT_USERNAME=merchant_demo \
 MERCHANT_PASSWORD_HASH='salt_hex:hash_hex' \
 MERCHANT_KEY=c670d687-2b27-5382-8888-57db91d31f68 \
-pnpm db:seed:merchant-user
+pnpm db:seed:single-merchant-user
 ```
 
-### `pnpm db:create:merchant-users`
+### `pnpm db:generate:merchant-users`
 
 Create merchant accounts in bulk for canonical merchants that do not yet have an active user.
 
 Example:
 
 ```bash
-pnpm db:create:merchant-users
+pnpm db:generate:merchant-users
 ```
 
 Output:
@@ -239,6 +239,36 @@ merchant_a@merchant.local,merchant_a,AbC123xYz890,c670d687-2b27-5382-8888-57db91
 
 Save the password output if the account will be used for login.
 
+### `pnpm db:delete:merchant-users`
+
+Delete all user accounts linked to merchants.
+
+Dry run:
+
+```bash
+pnpm db:delete:merchant-users
+```
+
+### `pnpm db:set:user-password`
+
+Update one user password by `USER_EMAIL` or `USER_USERNAME`.
+
+Example by email:
+
+```bash
+USER_EMAIL=merchant.demo@example.com \
+NEW_PASSWORD=rahasia123 \
+pnpm db:set:user-password
+```
+
+Example by username with a password hash:
+
+```bash
+USER_USERNAME=merchant_demo \
+NEW_PASSWORD_HASH='salt_hex:hash_hex' \
+pnpm db:set:user-password
+```
+
 ## Recommended Flow
 
 If you are bootstrapping merchant auth data from an existing database, the safe order is:
@@ -249,7 +279,7 @@ If you are bootstrapping merchant auth data from an existing database, the safe 
 4. `pnpm db:normalize:merchant-key -- --apply`
 5. `pnpm db:sync:usernames`
 6. `pnpm db:sync:usernames -- --apply`
-7. `pnpm db:create:merchant-users` or `pnpm db:seed:merchant-user`
+7. `pnpm db:generate:merchant-users` or `pnpm db:seed:single-merchant-user`
 
 ## Auth Flow
 
