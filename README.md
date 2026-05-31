@@ -40,18 +40,17 @@ pnpm db:migrate
 MERCHANT_EMAIL=... MERCHANT_USERNAME=... MERCHANT_PASSWORD=... MERCHANT_KEY=... pnpm db:seed:single-merchant-user
 ```
 
-The default scope is `merchant`, which means the user is linked to a single `merchant_key`.
-If the user should represent a canonical merchant that owns multiple `merchant_key` values, set `MERCHANT_SCOPE_TYPE=canonical`.
+The seeded user is linked to a single `merchant_key`.
 
 For `MERCHANT_PASSWORD_HASH`, use `salt_hex:hash_hex`. If `MERCHANT_PASSWORD_HASH` is provided, `MERCHANT_PASSWORD` is optional.
 
-6. Sync the canonical merchant mapping table:
+6. Normalize merchant keys if needed:
 
 ```bash
-pnpm db:sync:canonical-map
+pnpm db:normalize:merchant-key
 ```
 
-7. If one merchant brand has multiple `merchant_key` values, preview normalization:
+7. Preview merchant key normalization:
 
 ```bash
 pnpm db:normalize:merchant-key
@@ -63,7 +62,7 @@ Apply it with:
 pnpm db:normalize:merchant-key -- --apply
 ```
 
-The canonical grouping key is `dim_merchant.uniq_merchant`.
+The merchant grouping key is `dim_merchant.uniq_merchant`.
 
 8. Optional: preview empty `users.username` backfill from `dim_merchant.uniq_merchant`:
 
@@ -77,10 +76,10 @@ Apply it with:
 pnpm db:sync:usernames -- --apply
 ```
 
-9. Optional: auto-create missing merchant users from canonical mapping:
+9. Optional: auto-create missing merchant users:
 
 ```bash
-    pnpm db:generate:merchant-users
+pnpm db:generate:merchant-users
 ```
 
 ## Docker Setup
@@ -130,23 +129,9 @@ The `schema-migrate` service runs automatically before the apps start, so the da
 
 ## Database Scripts
 
-### `pnpm db:sync:canonical-map`
-
-Sync the contents of `merchant_canonical_map` from `dim_merchant`.
-
-Use it when:
-- `dim_merchant` data changes
-- you need to refresh `canonical_merchant_key` per `uniq_merchant`
-
-Example:
-
-```bash
-pnpm db:sync:canonical-map
-```
-
 ### `pnpm db:normalize:merchant-key`
 
-Preview merchants with more than one `merchant_key`, then remap them to the canonical key if approved.
+Preview merchants with more than one `merchant_key`, then remap them if approved.
 
 Preview:
 
@@ -161,8 +146,6 @@ pnpm db:normalize:merchant-key -- --apply
 ```
 
 Effects when applied:
-- updates `merchant_users`
-- updates `dim_rule.rule_merchant`
 - updates `fact_transaction.merchant_key`
 
 ### `pnpm db:sync:usernames`
@@ -183,11 +166,7 @@ pnpm db:sync:usernames -- --apply
 
 ### `pnpm db:seed:single-merchant-user`
 
-Seed one merchant user and map it into `merchant_users`.
-
-`MERCHANT_SCOPE_TYPE` options:
-- `merchant`: the user can access only `MERCHANT_KEY`
-- `canonical`: the user can access all merchants in the canonical group for `MERCHANT_KEY`
+Seed one merchant user for a merchant account.
 
 Example with a plain-text password:
 
@@ -196,17 +175,6 @@ MERCHANT_EMAIL=merchant.demo@example.com \
 MERCHANT_USERNAME=merchant_demo \
 MERCHANT_PASSWORD=rahasia123 \
 MERCHANT_KEY=c670d687-2b27-5382-8888-57db91d31f68 \
-pnpm db:seed:single-merchant-user
-```
-
-Example canonical account:
-
-```bash
-MERCHANT_EMAIL=merchant.group@example.com \
-MERCHANT_USERNAME=merchant_group \
-MERCHANT_PASSWORD=rahasia123 \
-MERCHANT_KEY=c670d687-2b27-5382-8888-57db91d31f68 \
-MERCHANT_SCOPE_TYPE=canonical \
 pnpm db:seed:single-merchant-user
 ```
 
@@ -222,7 +190,7 @@ pnpm db:seed:single-merchant-user
 
 ### `pnpm db:generate:merchant-users`
 
-Create merchant accounts in bulk for canonical merchants that do not yet have an active user.
+Create merchant accounts in bulk for merchants that do not yet have an active user.
 
 Example:
 
@@ -274,12 +242,11 @@ pnpm db:set:user-password
 If you are bootstrapping merchant auth data from an existing database, the safe order is:
 
 1. `pnpm db:migrate`
-2. `pnpm db:sync:canonical-map`
-3. `pnpm db:normalize:merchant-key`
-4. `pnpm db:normalize:merchant-key -- --apply`
-5. `pnpm db:sync:usernames`
-6. `pnpm db:sync:usernames -- --apply`
-7. `pnpm db:generate:merchant-users` or `pnpm db:seed:single-merchant-user`
+2. `pnpm db:normalize:merchant-key`
+3. `pnpm db:normalize:merchant-key -- --apply`
+4. `pnpm db:sync:usernames`
+5. `pnpm db:sync:usernames -- --apply`
+6. `pnpm db:generate:merchant-users` or `pnpm db:seed:single-merchant-user`
 
 ## Auth Flow
 
@@ -289,8 +256,8 @@ If you are bootstrapping merchant auth data from an existing database, the safe 
 
 ## Security Model
 
-- Dashboard APIs resolve merchant context from session -> `users` + `merchant_users`
-- API queries enforce `merchant_key = mapped merchant_key`
+- Dashboard APIs resolve merchant context from session -> `user_accounts`
+- API queries enforce merchant scoping through the session-bound merchant identity
 - Client-provided merchant identity is ignored
 
 ## Merchant Dashboard Routes

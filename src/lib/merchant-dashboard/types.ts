@@ -108,7 +108,6 @@ export type OperationalResponse = {
 };
 
 export type ProgramRow = {
-  ruleKey: string;
   keyword: string;
   merchantName: string;
   uniqMerchant: string;

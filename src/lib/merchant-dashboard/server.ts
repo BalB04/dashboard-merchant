@@ -744,26 +744,21 @@ const loadProviderBanners = async () => {
   }));
 };
 
-const loadProgramBannerAssets = async (ruleKeys: string[], keywordCodes: string[]) => {
-  if (ruleKeys.length === 0 && keywordCodes.length === 0) {
+const loadProgramBannerAssets = async (keywordCodes: string[]) => {
+  if (keywordCodes.length === 0) {
     return [];
   }
 
-  const result = await query<{ rule_key: string | null; keyword_code: string | null; image_url: string }>(
+  const result = await query<{ keyword_code: string; image_url: string }>(
     `
       select
-        rule_key::text as rule_key,
         keyword_code,
         image_url
       from program_banner_assets
       where is_active = true
-        and (
-          (cardinality($1::uuid[]) > 0 and rule_key = any($1::uuid[]))
-          or
-          (cardinality($2::text[]) > 0 and keyword_code = any($2::text[]))
-        )
+        and keyword_code = any($1::text[])
     `,
-    [ruleKeys, keywordCodes],
+    [keywordCodes],
   );
 
   return result.rows;
@@ -777,7 +772,6 @@ export async function getProgramsData(
 
   const [rules, keywordMetrics, banners] = await Promise.all([
     query<{
-      rule_key: string;
       keyword: string;
       merchant_name: string | null;
       uniq_merchant: string | null;
@@ -788,7 +782,6 @@ export async function getProgramsData(
       `
         ${scopedMerchantCte}
         select
-          vrmd.rule_key::text as rule_key,
           vrmd.keyword_code as keyword,
           dm.merchant_name as merchant_name,
           dm.uniq_merchant as uniq_merchant,
@@ -839,20 +832,12 @@ export async function getProgramsData(
   ]);
 
   const programBannerAssets = await loadProgramBannerAssets(
-    [...new Set(rules.rows.map((row) => row.rule_key).filter(Boolean))],
     [...new Set(rules.rows.map((row) => row.keyword).filter(Boolean))],
-  );
-
-  const assetByRuleKey = new Map(
-    programBannerAssets
-      .filter((asset) => asset.rule_key)
-      .map((asset) => [asset.rule_key as string, resolveAdminAssetUrl(asset.image_url)]),
   );
 
   const assetByKeywordCode = new Map(
     programBannerAssets
-      .filter((asset) => asset.keyword_code)
-      .map((asset) => [asset.keyword_code as string, resolveAdminAssetUrl(asset.image_url)]),
+      .map((asset) => [asset.keyword_code, resolveAdminAssetUrl(asset.image_url)]),
   );
 
   const metricsByKeyword = new Map(
@@ -885,7 +870,6 @@ export async function getProgramsData(
     programs: rules.rows
       .filter((row) => selection.keywords.length === 0 || selection.keywords.includes(row.keyword))
       .map((row) => ({
-        ruleKey: row.rule_key,
         keyword: row.keyword,
         merchantName: row.merchant_name ?? row.keyword,
         uniqMerchant: row.uniq_merchant ?? row.keyword,
@@ -893,7 +877,7 @@ export async function getProgramsData(
         startPeriod: row.start_period,
         endPeriod: row.end_period,
         status: row.status,
-        imageUrl: assetByRuleKey.get(row.rule_key) ?? assetByKeywordCode.get(row.keyword) ?? null,
+        imageUrl: assetByKeywordCode.get(row.keyword) ?? null,
         redeem: metricsByKeyword.get(row.keyword)?.redeem ?? 0,
         uniqueRedeemer: metricsByKeyword.get(row.keyword)?.uniqueRedeemer ?? 0,
         burningPoin: metricsByKeyword.get(row.keyword)?.burningPoin ?? 0,

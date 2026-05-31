@@ -8,6 +8,7 @@ import { useGlobalLoading } from "@/components/global-loading-provider";
 import { loginMerchantAction } from "@/app/login/actions";
 
 import { ThemeToggle } from "@/components/theme-toggle";
+import type { LoginMerchantResult } from "@/app/login/actions";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,7 +26,19 @@ export default function LoginPage() {
     try {
       setLoading(true);
       startPending();
-      await loginMerchantAction({ identifier, password });
+      const result: LoginMerchantResult = await loginMerchantAction({ identifier, password });
+      if (!result.ok) {
+        setError(
+          result.error === "invalid_credentials"
+            ? "Email/username atau password salah"
+            : result.error === "merchant_account_inactive"
+              ? "Merchant account belum aktif"
+            : result.error === "no_active_merchant_mapping"
+              ? "Akun belum terhubung ke merchant aktif"
+              : "Email/username dan password wajib diisi",
+        );
+        return;
+      }
       router.replace("/");
       router.refresh();
     } catch (err) {
