@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import {
   CalendarDays,
   ChevronLeft,
@@ -14,17 +13,12 @@ import {
 
 import { DashboardFilterControls } from "@/components/dashboard-filter-controls";
 import type { Banner, ProgramsResponse } from "@/lib/merchant-dashboard/types";
-import diningImage from "../images/dining.jpg";
-import entertainmentImage from "../images/entertainment.jpg";
-import shoppingImage from "../images/shopping.jpg";
 
 const numberFmt = new Intl.NumberFormat("id-ID");
 const compactFmt = new Intl.NumberFormat("en-US", {
   notation: "compact",
   maximumFractionDigits: 1,
 });
-
-const featureImages = [shoppingImage, entertainmentImage, diningImage] as const;
 
 const statusTheme = {
   active: {
@@ -50,22 +44,11 @@ const promotionAccentByIndex = [
   "from-[#102542] via-[#19376d] to-[#4f709c]",
 ] as const;
 
-const fallbackPromotions: Banner[] = [
-  {
-    id: "fallback-prime-placement",
-    imageUrl: shoppingImage.src,
-    title: "Prime Placement Booster",
-    subtitle: "Boost placement for high-intent shoppers across merchant discovery surfaces.",
-    cta: "Upgrade now",
-  },
-  {
-    id: "fallback-retargeting",
-    imageUrl: entertainmentImage.src,
-    title: "Smart Retargeting Engine",
-    subtitle: "Reactivate visitors who clicked but did not redeem with automated promo loops.",
-    cta: "Activate AI",
-  },
-];
+const fallbackAccentByIndex = [
+  "from-neutral-500 via-neutral-500 to-neutral-300",
+  "from-neutral-500 via-neutral-300 to-zinc-300",
+  "from-zinc-500 via-neutral-500 to-neutral-300",
+] as const;
 
 const fmt = (value: number) => numberFmt.format(value);
 
@@ -78,6 +61,19 @@ const daysBetween = (endPeriod: string, todayIso: string) =>
     ),
     0,
   );
+
+function FallbackVisual({ index, className }: { index: number; className?: string }) {
+  const accent = fallbackAccentByIndex[index % fallbackAccentByIndex.length];
+  return (
+    <div
+      className={`absolute inset-0 bg-gradient-to-br ${accent} ${className ?? ""}`}
+      aria-hidden="true"
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_36%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),transparent_38%,rgba(0,0,0,0.22))]" />
+    </div>
+  );
+}
 
 export function ProgramsContent({ initialData }: { initialData: ProgramsResponse }) {
   const [data, setData] = React.useState<ProgramsResponse>(initialData);
@@ -114,11 +110,7 @@ export function ProgramsContent({ initialData }: { initialData: ProgramsResponse
   const programs = data.programs;
   const activePrograms = programs.filter((program) => program.status === "active");
   const carouselPrograms = activePrograms.length ? activePrograms : programs;
-  const recommendedPromotions = data.banners.length ? data.banners : fallbackPromotions;
-  const selectedBannerImage =
-    selectedBanner?.imageUrl ??
-    fallbackPromotions.find((banner) => banner.id === selectedBanner?.id)?.imageUrl ??
-    fallbackPromotions[0]?.imageUrl;
+  const recommendedPromotions = data.banners;
 
   const activeProgramCount = activePrograms.length;
   const selectedProgram =
@@ -204,7 +196,6 @@ export function ProgramsContent({ initialData }: { initialData: ProgramsResponse
             >
               {carouselPrograms.map((program, index) => {
                 const isSelected = selectedProgram?.keyword === program.keyword;
-                const fallbackImage = featureImages[index % featureImages.length];
                 const status = statusTheme[program.status];
                 const daysLeft =
                   program.status === "expired" ? null : daysBetween(program.endPeriod, todayIso);
@@ -236,11 +227,9 @@ export function ProgramsContent({ initialData }: { initialData: ProgramsResponse
                         className={`absolute inset-0 h-full w-full object-cover transition duration-700 ${isSelected ? "scale-[1.02]" : "group-hover:scale-[1.03]"}`}
                       />
                     ) : (
-                      <Image
-                        src={fallbackImage}
-                        alt={`${program.programName} banner`}
-                        className={`absolute inset-0 h-full w-full object-cover transition duration-700 ${isSelected ? "scale-[1.02]" : "group-hover:scale-[1.03]"}`}
-                        sizes="(min-width: 1280px) 40vw, 100vw"
+                      <FallbackVisual
+                        index={index}
+                        className={`${isSelected ? "scale-[1.02]" : "group-hover:scale-[1.03]"} transition duration-700`}
                       />
                     )}
                     <div className="absolute inset-0 backdrop-blur-[1.5px]" />
@@ -389,36 +378,36 @@ export function ProgramsContent({ initialData }: { initialData: ProgramsResponse
           </div>
         </div>
 
-        <div
-          ref={promotionCarouselRef}
-          className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {recommendedPromotions.map((banner, index) => {
-            const image =
-              banner.imageUrl || fallbackPromotions[index % fallbackPromotions.length]?.imageUrl;
-
-            return (
-              <article
-                key={banner.id}
-                className="group relative min-w-[380px] snap-start overflow-hidden rounded-[22px] bg-slate-950 p-4 text-white shadow-[0_14px_28px_rgba(15,23,42,0.15)] md:min-h-[240px] md:min-w-[500px] xl:min-w-[620px]"
-              >
-                {image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={image}
-                    alt={banner.title}
-                    className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+        {recommendedPromotions.length === 0 ? (
+          <div className="programs-empty-state rounded-[28px] border border-dashed border-slate-300 bg-white/80 px-5 py-8 text-sm text-slate-500">
+            Tidak ada promotion yang tersedia di database.
+          </div>
+        ) : (
+          <div
+            ref={promotionCarouselRef}
+            className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {recommendedPromotions.map((banner, index) => {
+              return (
+                <article
+                  key={banner.id}
+                  className="group relative min-w-[380px] snap-start overflow-hidden rounded-[22px] bg-slate-950 p-4 text-white shadow-[0_14px_28px_rgba(15,23,42,0.15)] md:min-h-[240px] md:min-w-[500px] xl:min-w-[620px]"
+                >
+                  {banner.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={banner.imageUrl}
+                      alt={banner.title}
+                      className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <FallbackVisual index={index} />
+                  )}
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-r ${promotionAccentByIndex[index % promotionAccentByIndex.length]} opacity-50 transition-opacity duration-700 group-hover:opacity-25 backdrop-blur-[1.5px]`}
                   />
-                ) : null}
-                <div
-                  className={`absolute inset-0 bg-gradient-to-r ${promotionAccentByIndex[index % promotionAccentByIndex.length]} opacity-50 transition-opacity duration-700 group-hover:opacity-25 backdrop-blur-[1.5px]`}
-                />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.14),transparent_35%)]" />
 
-                <div className="absolute bottom-4 right-4 w-full max-w-[86%] rounded-[22px] border border-white/18 bg-black/34 p-3.5 backdrop-blur-md md:max-w-[82%]">
-                    {/* <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/82">
-                      {index === 0 ? "Placement booster" : "Smart engine"}
-                    </div> */}
+                  <div className="absolute bottom-4 right-4 w-full max-w-[86%] rounded-[22px] border border-white/18 bg-black/34 p-3.5 backdrop-blur-md md:max-w-[82%]">
                     <h3 className="mt-3 max-w-[22ch] text-[22px] font-semibold leading-[1.05] tracking-tight">
                       {banner.title}
                     </h3>
@@ -438,13 +427,14 @@ export function ProgramsContent({ initialData }: { initialData: ProgramsResponse
                       className={`mt-4 rounded-full px-3.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.16em] transition bg-white text-slate-900 hover:bg-slate-100`}
                       onClick={() => setSelectedBanner(banner)}
                     >
-                      {banner.cta || "Launch promotion"}
+                      {banner.cta || "Lihat promotion"}
                     </button>
                   </div>
-              </article>
-            );
-          })}
-        </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {selectedBanner ? (
@@ -460,11 +450,11 @@ export function ProgramsContent({ initialData }: { initialData: ProgramsResponse
             aria-modal="true"
             aria-labelledby="promotion-modal-title"
           >
-            {selectedBannerImage ? (
+            {selectedBanner.imageUrl ? (
               <div className="relative mb-4 flex items-center justify-center overflow-hidden rounded-[22px] bg-slate-100 p-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={selectedBannerImage}
+                  src={selectedBanner.imageUrl}
                   alt={selectedBanner.title}
                   className="h-auto w-auto max-h-[calc(100vh-16rem)] max-w-full object-contain"
                 />
