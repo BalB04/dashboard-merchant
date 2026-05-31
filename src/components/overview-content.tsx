@@ -36,6 +36,20 @@ const formatList = (items: string[], fallback: string) => {
   if (items.length <= 2) return items.join(", ");
   return `${items.slice(0, 2).join(", ")} +${items.length - 2} lainnya`;
 };
+const formatMerchantPairs = (names: string[], uniqs: string[]) => {
+  const pairs = names
+    .map((name, index) => {
+      const uniq = uniqs[index];
+      if (!name && !uniq) return "";
+      if (!name) return uniq ?? "";
+      if (!uniq) return name;
+      return `${name}(${uniq})`;
+    })
+    .filter(Boolean);
+
+  if (pairs.length <= 2) return pairs;
+  return [...pairs.slice(0, 2), `+${pairs.length - 2} lainnya`];
+};
 const getStatusTone = (status: string) => {
   switch (status.toLowerCase()) {
     case "active":
@@ -114,24 +128,28 @@ export function OverviewContent({ initialData }: { initialData: OverviewResponse
   }, [data?.transactions]);
 
   const kpis = [
-    { label: "Total Transaksi Berhasil", value: data.myKpi.redeem, prev: data.myKpi.previous.redeem },
+    {
+      label: "Total Transaksi Berhasil",
+      metric: "redeem" as const,
+      value: data.myKpi.redeem,
+      prev: data.myKpi.previous.redeem,
+    },
     {
       label: "Unique Redeemer",
+      metric: "uniqueRedeemer" as const,
       value: data.myKpi.uniqueRedeemer,
       prev: data.myKpi.previous.uniqueRedeemer,
     },
-    { label: "Burning Poin", value: data.myKpi.burningPoin, prev: data.myKpi.previous.burningPoin },
+    {
+      label: "Burning Poin",
+      metric: "burningPoin" as const,
+      value: data.myKpi.burningPoin,
+      prev: data.myKpi.previous.burningPoin,
+    },
   ];
-  const merchantTitle =
-    data.merchant.merchantNames[0] ?? data.merchant.uniqMerchants[0] ?? "Merchant";
-  const merchantAlt =
-    data.merchant.uniqMerchants[0] && data.merchant.uniqMerchants[0] !== merchantTitle
-      ? data.merchant.uniqMerchants[0]
-      : "";
+  const username = data.merchant.username ?? data.merchant.email ?? "Merchant";
+  const merchantPairs = formatMerchantPairs(data.merchant.merchantNames, data.merchant.uniqMerchants);
   const keywordText = formatList(data.merchant.keywords, "");
-  const merchantSecondaryMeta = [merchantAlt, formatList(data.merchant.merchantNames.slice(1), "")]
-    .filter(Boolean)
-    .join(" / ");
 
   return (
     <div className="space-y-4 px-3 py-3 md:px-5">
@@ -141,11 +159,32 @@ export function OverviewContent({ initialData }: { initialData: OverviewResponse
             Ringkasan bulan
           </div>
           <div className="mt-1 text-[1.85rem] font-bold leading-tight text-slate-900 sm:text-[2.15rem] md:text-[2.35rem]">
-            {merchantTitle}.
+            {username}
           </div>
-          {merchantSecondaryMeta ? (
-            <div className="mt-1 text-sm font-medium leading-6 text-slate-600">
-              {merchantSecondaryMeta}
+          {merchantPairs.length ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {merchantPairs.map((pair, index) => {
+                const isMore = pair.startsWith("+");
+                const isComposite = !isMore && pair.includes("(") && pair.endsWith(")");
+                const name = isComposite ? pair.slice(0, pair.lastIndexOf("(")) : pair;
+                const uniq = isComposite ? pair.slice(pair.lastIndexOf("(") + 1, -1) : "";
+
+                return (
+                  <div
+                    key={`${pair}-${index}`}
+                    className="inline-flex min-w-0 flex-col gap-1 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm"
+                  >
+                    <div className="truncate text-[11px] font-semibold tracking-tight text-slate-900">
+                      {isMore ? pair : name}
+                    </div>
+                    {!isMore ? (
+                      <div className="inline-flex w-fit items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium tracking-[0.08em] text-slate-500">
+                        {uniq}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           ) : null}
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-6 text-slate-500">
@@ -159,7 +198,7 @@ export function OverviewContent({ initialData }: { initialData: OverviewResponse
         <div className="grid w-full gap-3 sm:grid-cols-3 xl:w-auto xl:min-w-[560px]">
           <div className="glass-panel min-h-24 rounded-2xl border border-slate-200 px-5 py-4 shadow-sm">
             <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-              Bulan ini
+              Bulan data
             </div>
             <div className="mt-2 text-[1.35rem] font-bold leading-none text-slate-900">
               {data.monthLabel}
@@ -191,9 +230,9 @@ export function OverviewContent({ initialData }: { initialData: OverviewResponse
           const growth = pct(item.value, item.prev);
           const isUp = growth >= 0;
           const lineData =
-            item.label === "My KPI - Redeem"
+            item.metric === "redeem"
               ? dailyInSelectedMonth.map((d) => ({ label: d.date, value: d.redeem }))
-              : item.label === "My KPI - Unique Redeemer"
+              : item.metric === "uniqueRedeemer"
                 ? dailyInSelectedMonth.map((d) => ({ label: d.date, value: d.uniqueRedeemer }))
                 : dailyInSelectedMonth.map((d) => ({ label: d.date, value: d.burningPoin }));
 

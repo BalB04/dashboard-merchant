@@ -6,6 +6,7 @@ export type MerchantSession = {
   merchantKey: string;
   scopeType: "account";
   email: string;
+  username: string | null;
 };
 
 export const getCurrentMerchantSession = async (): Promise<MerchantSession | null> => {
@@ -17,12 +18,14 @@ export const getCurrentMerchantSession = async (): Promise<MerchantSession | nul
   const result = await query<{
     id: number;
     email: string;
+    username: string | null;
     merchant_key: string;
   }>(
     `
       select
         ua.id,
         ua.email,
+        ua.username,
         dm.merchant_key
       from user_accounts ua
       join lateral (
@@ -49,5 +52,6 @@ export const getCurrentMerchantSession = async (): Promise<MerchantSession | nul
     merchantKey: row.merchant_key,
     scopeType: "account",
     email: row.email,
+    username: row.username ?? null,
   };
 };

@@ -251,9 +251,66 @@ export async function getOverviewData(
   const latestMonth = latestMonthValue(selection.months);
   const latestStart = parseMonth(latestMonth);
   const latestEnd = addMonths(latestStart, 1);
-  const previousMonth = formatMonth(addMonths(latestStart, -1));
+  const merchantProfile = await query<{
+    merchant_names: string[] | null;
+    uniq_merchants: string[] | null;
+    categories: string[] | null;
+    keywords: string[] | null;
+    start_period: string | null;
+    end_period: string | null;
+    point_redeem: string | null;
+  }>(
+    `
+      ${scopedMerchantCte}
+      select
+        array_remove(array_agg(distinct dm.merchant_name), null) as merchant_names,
+        array_remove(array_agg(distinct dm.uniq_merchant), null) as uniq_merchants,
+        array_remove(array_agg(distinct dc.category), null) as categories,
+        array_remove(array_agg(distinct dm.keyword_code), null) as keywords,
+        min(vrmd.start_period)::text as start_period,
+        max(vrmd.end_period)::text as end_period,
+        (array_agg(distinct vrmd.point_redeem order by vrmd.point_redeem desc))[1]::int::text as point_redeem
+      from dim_merchant dm
+      join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
+      join dim_category dc on dc.category_id = dm.category_id
+      left join vw_rule_merchant_dim vrmd on vrmd.merchant_key = dm.merchant_key
+      where dm.merchant_key in (select merchant_key from merchant_scope)
+        and ($3::text[] is null or cardinality($3::text[]) = 0 or dc.category = any($3::text[]))
+        and ($4::text[] is null or cardinality($4::text[]) = 0 or dcl.branch = any($4::text[]))
+        and ($5::text[] is null or cardinality($5::text[]) = 0 or dm.keyword_code = any($5::text[]))
+    `,
+    [session.userId, session.scopeType, selection.categories, selection.branches, selection.keywords],
+  );
 
-  const [kpiCurrent, kpiPrevious, merchantProfile] = await Promise.all([
+  const monthlyTrend = await query<{ month: string; redeem: string; unique_redeemer: string; burning_poin: string }>(
+    `
+      ${scopedMerchantCte}
+      select
+        to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') as month,
+        count(*)::int as redeem,
+        count(distinct ft.msisdn)::int as unique_redeemer,
+        coalesce(sum(ft.qty * ft.point_redeem), 0)::bigint as burning_poin
+      from fact_transaction ft
+      join dim_merchant dm on dm.merchant_key = ft.merchant_key
+      join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
+      join dim_category dc on dc.category_id = dm.category_id
+      where ft.status = 'success'
+        and ft.merchant_key in (select merchant_key from merchant_scope)
+        and ft.transaction_at >= $3
+        and ft.transaction_at < $4
+        and ($5::text[] is null or cardinality($5::text[]) = 0 or dc.category = any($5::text[]))
+        and ($6::text[] is null or cardinality($6::text[]) = 0 or dcl.branch = any($6::text[]))
+        and ($7::text[] is null or cardinality($7::text[]) = 0 or dm.keyword_code = any($7::text[]))
+      group by date_trunc('month', ft.transaction_at)
+      order by date_trunc('month', ft.transaction_at)
+    `,
+    [session.userId, session.scopeType, addMonths(latestStart, -11), latestEnd, selection.categories, selection.branches, selection.keywords],
+  );
+
+  const analyticsMonth = latestMonthValue(monthlyTrend.rows.map((row) => row.month)) || latestMonth;
+  const analyticsPreviousMonth = monthlyTrend.rows.at(-2)?.month ?? formatMonth(addMonths(parseMonth(analyticsMonth), -1));
+
+  const [kpiCurrent, kpiPrevious, dailyTrend, ruleStatus, transactions] = await Promise.all([
     query<{ redeem: string; unique_redeemer: string; burning_poin: string }>(
       `
         ${scopedMerchantCte}
@@ -267,12 +324,12 @@ export async function getOverviewData(
         join dim_category dc on dc.category_id = dm.category_id
         where ft.status = 'success'
           and ft.merchant_key in (select merchant_key from merchant_scope)
-          and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = any($3::text[])
+          and to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') = $3
           and ($4::text[] is null or cardinality($4::text[]) = 0 or dc.category = any($4::text[]))
           and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
           and ($6::text[] is null or cardinality($6::text[]) = 0 or dm.keyword_code = any($6::text[]))
       `,
-      [session.userId, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
+      [session.userId, session.scopeType, analyticsMonth, selection.categories, selection.branches, selection.keywords],
     ),
     query<{ redeem: string; unique_redeemer: string; burning_poin: string }>(
       `
@@ -292,41 +349,8 @@ export async function getOverviewData(
           and ($5::text[] is null or cardinality($5::text[]) = 0 or dcl.branch = any($5::text[]))
           and ($6::text[] is null or cardinality($6::text[]) = 0 or dm.keyword_code = any($6::text[]))
       `,
-      [session.userId, session.scopeType, previousMonth, selection.categories, selection.branches, selection.keywords],
+      [session.userId, session.scopeType, analyticsPreviousMonth, selection.categories, selection.branches, selection.keywords],
     ),
-    query<{
-      merchant_names: string[] | null;
-      uniq_merchants: string[] | null;
-      categories: string[] | null;
-      keywords: string[] | null;
-      start_period: string | null;
-      end_period: string | null;
-      point_redeem: string | null;
-    }>(
-      `
-        ${scopedMerchantCte}
-        select
-          array_remove(array_agg(distinct dm.merchant_name), null) as merchant_names,
-          array_remove(array_agg(distinct dm.uniq_merchant), null) as uniq_merchants,
-          array_remove(array_agg(distinct dc.category), null) as categories,
-          array_remove(array_agg(distinct dm.keyword_code), null) as keywords,
-          min(vrmd.start_period)::text as start_period,
-          max(vrmd.end_period)::text as end_period,
-          (array_agg(distinct vrmd.point_redeem order by vrmd.point_redeem desc))[1]::int::text as point_redeem
-        from dim_merchant dm
-        join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
-        join dim_category dc on dc.category_id = dm.category_id
-        left join vw_rule_merchant_dim vrmd on vrmd.merchant_key = dm.merchant_key
-        where dm.merchant_key in (select merchant_key from merchant_scope)
-          and ($3::text[] is null or cardinality($3::text[]) = 0 or dc.category = any($3::text[]))
-          and ($4::text[] is null or cardinality($4::text[]) = 0 or dcl.branch = any($4::text[]))
-          and ($5::text[] is null or cardinality($5::text[]) = 0 or dm.keyword_code = any($5::text[]))
-      `,
-      [session.userId, session.scopeType, selection.categories, selection.branches, selection.keywords],
-    ),
-  ]);
-
-  const [dailyTrend, monthlyTrend, ruleStatus, transactions] = await Promise.all([
     query<{ date: string; redeem: string; unique_redeemer: string; burning_poin: string }>(
       `
         ${scopedMerchantCte}
@@ -349,30 +373,6 @@ export async function getOverviewData(
         order by date(ft.transaction_at)
       `,
       [session.userId, session.scopeType, selection.months, selection.categories, selection.branches, selection.keywords],
-    ),
-    query<{ month: string; redeem: string; unique_redeemer: string; burning_poin: string }>(
-      `
-        ${scopedMerchantCte}
-        select
-          to_char(date_trunc('month', ft.transaction_at), 'YYYY-MM') as month,
-          count(*)::int as redeem,
-          count(distinct ft.msisdn)::int as unique_redeemer,
-          coalesce(sum(ft.qty * ft.point_redeem), 0)::bigint as burning_poin
-        from fact_transaction ft
-        join dim_merchant dm on dm.merchant_key = ft.merchant_key
-        join dim_cluster dcl on dcl.cluster_id = dm.cluster_id
-        join dim_category dc on dc.category_id = dm.category_id
-        where ft.status = 'success'
-          and ft.merchant_key in (select merchant_key from merchant_scope)
-          and ft.transaction_at >= $3
-          and ft.transaction_at < $4
-          and ($5::text[] is null or cardinality($5::text[]) = 0 or dc.category = any($5::text[]))
-          and ($6::text[] is null or cardinality($6::text[]) = 0 or dcl.branch = any($6::text[]))
-          and ($7::text[] is null or cardinality($7::text[]) = 0 or dm.keyword_code = any($7::text[]))
-        group by date_trunc('month', ft.transaction_at)
-        order by date_trunc('month', ft.transaction_at)
-      `,
-      [session.userId, session.scopeType, addMonths(latestStart, -5), latestEnd, selection.categories, selection.branches, selection.keywords],
     ),
     query<{
       keyword: string;
@@ -454,8 +454,8 @@ export async function getOverviewData(
     point_redeem: null,
   };
   const monthlyTrendMap = new Map(monthlyTrend.rows.map((row) => [row.month, row]));
-  const filledMonthlyTrend = Array.from({ length: 6 }, (_, index) => {
-    const monthDate = addMonths(latestStart, index - 5);
+  const filledMonthlyTrend = Array.from({ length: 12 }, (_, index) => {
+    const monthDate = addMonths(parseMonth(analyticsMonth), index - 11);
     const month = formatMonth(monthDate);
     const row = monthlyTrendMap.get(month);
 
@@ -468,11 +468,12 @@ export async function getOverviewData(
   });
 
   return {
-    month: latestMonth,
-    monthLabel: monthLabel(latestMonth),
-    previousMonthLabel: monthLabel(previousMonth),
+    month: analyticsMonth,
+    monthLabel: monthLabel(analyticsMonth),
+    previousMonthLabel: monthLabel(analyticsPreviousMonth),
     merchant: {
       merchantKey: session.merchantKey,
+      username: session.username,
       email: session.email,
       merchantNames: merchant.merchant_names ?? [],
       uniqMerchants: merchant.uniq_merchants ?? [],

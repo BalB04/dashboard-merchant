@@ -102,7 +102,7 @@ export function MonthlyBarChart({
 }) {
   const [mode, setMode] = React.useState<"monthly" | "daily">("monthly");
   const monthShort = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-  const visibleMonthlyData = [...monthlyData.slice(-6)].reverse();
+  const visibleMonthlyData = monthlyData.slice(-12);
   const normalizedMonthly = visibleMonthlyData.length
     ? visibleMonthlyData.map((d) => {
         const monthIndex = Number(d.label.slice(5, 7)) - 1;

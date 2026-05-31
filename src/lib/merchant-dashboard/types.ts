@@ -35,6 +35,7 @@ export type OverviewResponse = {
   previousMonthLabel: string;
   merchant: {
     merchantKey: string;
+    username: string | null;
     email: string;
     merchantNames: string[];
     uniqMerchants: string[];
