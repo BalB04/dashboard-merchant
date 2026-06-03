@@ -123,7 +123,7 @@ export function FeedbackContent({ initialHistory }: { initialHistory: FeedbackIt
   return (
     <div className="space-y-4 px-3 py-3 md:px-5">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="text-[1.35rem] font-bold tracking-[-0.035em] leading-tight text-slate-900">Pusat Center</div>
+        <div className="text-[1.35rem] font-bold tracking-[-0.035em] leading-tight text-slate-900">Feedback Center</div>
         <div className="mt-1 text-sm font-medium leading-6 text-slate-500">
           Sampaikan laporan, kritik, dan saran ke provider
         </div>
